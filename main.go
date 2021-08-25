@@ -76,6 +76,7 @@ func (o *options) gatherOptions() {
 	fs.StringVar(&o.jobName, jobNameOption, "", "Name of the periodic job to manually trigger")
 	fs.StringVar(&o.ocpVersion, ocpVersionOption, "", "Version of OCP to use; 4.x or higher")
 	fs.StringVar(&o.outputPath, outputFilePathOption, "", "File to store JSON returned from job submission")
+	fs.StringVar(&o.releaseImageRef, releaseImageRefOption, "", "Release payload image to use for OCP deployment.")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Display the job YAML without submitting the job to Prow")
 	o.prowconfig.AddFlags(fs)
 }
@@ -255,7 +256,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	// TODO: parse this
+	// TODO:
 	logrus.Info("getting cluster config")
 	clusterConfig, err := util.LoadClusterConfig()
 	if err != nil {
