@@ -1,0 +1,30 @@
+releases:
+  latest:
+    release:
+      channel: stable
+      version: "4.8"
+resources:
+  '*':
+    limits:
+      memory: 4Gi
+    requests:
+      cpu: 100m
+      memory: 200Mi
+tests:
+- as: redhat-openshift-ecosystem-preflight-cluster-claim-aws
+  cluster_claim:
+    architecture: amd64
+    cloud: aws
+    owner: hcp
+    product: ocp
+    timeout: 1h0m0s
+    version: "4.8"
+  cron: '@yearly'
+  steps:
+    env: # TODO define what we actually need here
+      PREFLIGHT_TEST_ASSET: quay.io/komish/preflight-test-bundle-passes:latest # staged
+    workflow: preflight-common-claim
+zz_generated_metadata: # TODO how are these auto-generated?
+  branch: ocp-4.8
+  org: redhat-openshift-ecosystem
+  repo: openshift-pipelines

@@ -1,0 +1,18 @@
+ref:
+  as: redhat-openshift-ecosystem-preflight-common-check
+  from_image:
+    name: openshift-preflight
+    namespace: ci
+    tag: latest
+  commands: check-commands.sh
+  environment:
+    - name: PREFLIGHT_TEST_ASSET
+      documentation: The asset under test by the preflight utility.
+    - name: PREFLIGHT_ASSET_TYPE
+      documentation: The type of asset under test. One of "container" or "operator".
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 400Mi
+  documentation: |-
+      This step will execute the Preflight utility against a target certification test asset.

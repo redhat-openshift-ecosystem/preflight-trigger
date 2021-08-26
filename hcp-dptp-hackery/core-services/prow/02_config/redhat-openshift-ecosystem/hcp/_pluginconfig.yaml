@@ -1,0 +1,5 @@
+plugins: # TODO ensure you actually need this! I don't think we have a git-based workflow.
+  redhat-openshift-ecosystem/community-operators-pipeline:
+    plugins:
+    - bugzilla
+    - owners-label
