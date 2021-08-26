@@ -32,4 +32,7 @@ require (
 	k8s.io/test-infra v0.0.0-20210823175823-85d839e08600
 )
 
-require github.com/openshift/ci-tools v0.0.0-20210825141814-c151c81eb844
+require (
+	github.com/openshift/ci-tools v0.0.0-20210825141814-c151c81eb844
+	k8s.io/apimachinery v0.21.2
+)
