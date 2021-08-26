@@ -23,10 +23,15 @@ and the ProwJob is run once it has been applied to the cluster.
 - [ ] Tekton Task for the Tekton Pipeline that runs preflight-trigger and subsequent requirements
 
 ```shell
-#latest run Thu Aug 26 17:08:16 CDT 2021
+# latest run Thu Aug 26 17:08:16 CDT 2021
 
-ovpn-113-106:preflight-trigger mrhillsman$ go run main.go -job-config-path hcp-dptp-hackery/jobs/redhat-openshift-ecosystem/preflight/redhat-openshift-ecosystem-preflight-ocp-4.8-periodics.yaml -job-name period
-ic-ci-redhat-openshift-ecosystem-preflight-ocp-4.8-preflight-cluster-claim-aws -prow-config-path hcp-dptp-hackery/core-services/prow/02_config/_config.yaml -ocp-version 4.8.7 -output-path . -dry-run
+ovpn-113-106:preflight-trigger mrhillsman$ go run main.go \
+-job-config-path hcp-dptp-hackery/jobs/redhat-openshift-ecosystem/preflight/redhat-openshift-ecosystem-preflight-ocp-4.8-periodics.yaml \
+-job-name periodic-ci-redhat-openshift-ecosystem-preflight-ocp-4.8-preflight-cluster-claim-aws \
+-prow-config-path hcp-dptp-hackery/core-services/prow/02_config/_config.yaml \
+-ocp-version 4.8.7 \
+-output-path . \
+-dry-run
 INFO[0000] Cannot use full value, will truncate.         id= job=periodic-ci-redhat-openshift-ecosystem-preflight-ocp-4.8-preflight-cluster-claim-aws key=prow.k8s.io/job maybeTruncated=periodic-ci-redhat-openshift-ecosystem-preflight-ocp-4.8-prefli value=periodic-ci-redhat-openshift-ecosystem-preflight-ocp-4.8-preflight-cluster-claim-aws
 apiVersion: prow.k8s.io/v1
 kind: ProwJob
