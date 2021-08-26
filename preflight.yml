@@ -1,0 +1,81 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  annotations:
+    kubectl.kubernetes.io/last-applied-configuration: >
+      {"apiVersion":"tekton.dev/v1beta1","kind":"Task","metadata":{"annotations":{},"name":"preflight","namespace":"playground"},"spec":{"params":[{"default":"false","name":"preflight_results_exists"}],"results":[{"name":"log_output_file"},{"name":"result_output_file"},{"name":"artifacts_output_dir"}],"steps":[{"image":"quay.io/redhat-isv/operator-pipelines-images:latest","name":"preflight-tests","script":"#!
+      /usr/bin/env
+      bash\nPREFLIGHT_RESULTS_EXISTS=\"$(params.preflight_results_exists)\"\nif
+      [ $PREFLIGHT_RESULTS_EXISTS == \"true\" ]; then\n  echo \"Preflight
+      results already exists- skipping\"\n  echo -n \"none\" | tee
+      $(results.log_output_file.path)\n  echo -n \"none\" | tee
+      $(results.result_output_file.path)\n  exit 0\nfi\n\necho \"Testing\"\n\n#
+      Temporary test data\nls -l\ncp -r /home/user/tests/data/* .\nls
+      -l\n\n\necho -n preflight.log | tee $(results.log_output_file.path)\necho
+      -n results.json | tee $(results.result_output_file.path)\necho -n
+      artifacts | tee
+      $(results.artifacts_output_dir.path)\n","workingDir":"$(workspaces.source.path)"}],"workspaces":[{"name":"source"}]}}
+  selfLink: /apis/tekton.dev/v1beta1/namespaces/playground/tasks/preflight
+  resourceVersion: '482594'
+  name: preflight
+  uid: 51bbb794-682f-4cdc-9b92-07467dbc2462
+  creationTimestamp: '2021-08-26T13:21:18Z'
+  generation: 1
+  managedFields:
+    - apiVersion: tekton.dev/v1beta1
+      fieldsType: FieldsV1
+      fieldsV1:
+        'f:metadata':
+          'f:annotations':
+            .: {}
+            'f:kubectl.kubernetes.io/last-applied-configuration': {}
+        'f:spec':
+          .: {}
+          'f:params': {}
+          'f:results': {}
+          'f:steps': {}
+          'f:workspaces': {}
+      manager: kubectl-client-side-apply
+      operation: Update
+      time: '2021-08-26T13:21:18Z'
+  namespace: playground
+spec:
+  params:
+    - default: 'false'
+      name: preflight_results_exists
+      type: string
+  results:
+    - description: ''
+      name: log_output_file
+    - description: ''
+      name: result_output_file
+    - description: ''
+      name: artifacts_output_dir
+  steps:
+    - image: 'quay.io/redhat-isv/operator-pipelines-images:latest'
+      name: preflight-tests
+      resources: {}
+      script: |
+        #! /usr/bin/env bash
+        PREFLIGHT_RESULTS_EXISTS="$(params.preflight_results_exists)"
+        if [ $PREFLIGHT_RESULTS_EXISTS == "true" ]; then
+          echo "Preflight results already exists- skipping"
+          echo -n "none" | tee $(results.log_output_file.path)
+          echo -n "none" | tee $(results.result_output_file.path)
+          exit 0
+        fi
+
+        echo "Testing"
+
+        # Temporary test data
+        ls -l
+        cp -r /home/user/tests/data/* .
+        ls -l
+
+
+        echo -n preflight.log | tee $(results.log_output_file.path)
+        echo -n results.json | tee $(results.result_output_file.path)
+        echo -n artifacts | tee $(results.artifacts_output_dir.path)
+      workingDir: $(workspaces.source.path)
+  workspaces:
+    - name: source
