@@ -1,0 +1,77 @@
+# Namespace preflight serviceaccount will be in
+apiVersion: v1
+kind: Namespace
+metadata:
+  annotations:
+    openshift.io/description: Automation ServiceAccounts for Preflight
+    openshift.io/display-name: Preflight
+  name: preflight
+---
+# this is the ServiceAccount whose credentials you will use
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: image-puller
+  namespace: preflight
+---
+# this grants your ServiceAccount rights to pull images
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: preflight-image-puller-binding
+  # the namespace from which you will pull images
+  namespace: ocp
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: system:image-puller
+subjects:
+  - kind: ServiceAccount
+    namespace: preflight
+    name: image-puller
+---
+# the Group of people who should be able to manage this ServiceAccount
+kind: Group
+apiVersion: v1
+metadata:
+  name: preflight-admins
+users:
+  # these names are GitHub usernames
+  - amisstea
+  - komish
+  - mrhillsman
+  - jomkz
+  - tonytcampbell
+---
+# this adds the admins to the project.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: preflight-viewer-binding
+  namespace: preflight
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: view
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: preflight-admins
+    namespace: preflight
+---
+# this grants the right to read the ServiceAccount's credentials and pull
+# images to the admins.
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: preflight-admins-binding
+  namespace: preflight
+roleRef:
+  kind: ClusterRole
+  apiGroup: rbac.authorization.k8s.io
+  name: pull-secret-namespace-manager
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: preflight-admins
+    namespace: preflight
