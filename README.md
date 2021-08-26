@@ -11,9 +11,13 @@ resource is applied to the OpenShift CI cluster. The OpenShift CI cluster runs a
 and the ProwJob is run once it has been applied to the cluster.
 
 - [ ] Verify preflight-trigger works with cluster_claim
-- [ ] Verify preflight-trigger can interact with OpenShift CI
-- [ ] Determine where preflight-trigger code needs to be
-- [ ] How do we trigger preflight-trigger
+- [x] Verify preflight-trigger can interact with OpenShift CI
+  - we need to get credentials: how-to > [documentation](https://docs.ci.openshift.org/docs/how-tos/use-registries-in-build-farm/#how-do-i-get-a-token-for-programmatic-access-to-the-central-ci-registry)
+- [x] Determine where preflight-trigger code needs to be
+  - not required to be in ci-tools
+- [x] How do we trigger preflight-trigger
+  - not "triggered" but will run as a binary getting/passing/creating vars for ProwJob
 - [ ] Add env vars that preflight or other binaries that run in the tests section need
-- [ ] Is a Dockerfile for preflight-trigger required; based on cvp-trigger having one
+- [x] Is a Dockerfile for preflight-trigger required; based on cvp-trigger having one
+  - yes
 - [ ] Tekton Task for the Tekton Pipeline that runs preflight-trigger and subsequent requirements
