@@ -150,3 +150,5 @@ status:
 
 ovpn-113-106:preflight-trigger mrhillsman$ 
 ```
+
+- [ ] What does a successful ProwJob look like?
