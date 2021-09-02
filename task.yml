@@ -1,0 +1,66 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: preflight-trigger
+  namespace: playground
+spec:
+  description: >-
+    Tekton Task for binary preflight-trigger which targets OpenShift CI creating
+    an ondemand ProwJob that runs openshift-preflight for specified OpenShift
+    operator.
+  params:
+    - default: preflight-trigger-kubeconfig
+      description: Name of the secret containing the kubeconfig for preflight-trigger
+      name: kubeconfig
+      type: string
+    - default: /workspace/.kube
+      description: Location of the kubeconfig for preflight-trigger
+      name: kubeconfig-dir
+      type: string
+    - default: '4.8'
+      description: Version of OpenShift test cluster should be running.
+      name: ocp-version
+      type: string
+  volumes:
+    - name: kubeconfig
+      secret:
+        secretName: $(params.kubeconfig)
+  steps:
+    - name: clone-for-configs
+      image: registry.access.redhat.com/ubi8/go-toolset
+      script: |
+        #!/usr/bin/env bash
+        echo "Cloning https://github.com/openshift/release to create ProwJob"
+        git clone https://github.com/mrhillsman/release
+        mkdir preflight-trigger
+        ls -lha
+    - args:
+        - '-job-config-path'
+        - 'release/ci-operator/jobs/redhat-openshift-ecosystem/cvp/redhat-openshift-ecosystem-cvp-ocp-$(params.ocp-version)-periodics.yaml'
+        - '-job-name'
+        - 'echo-test'
+        - '-ocp-version'
+        - '$(params.ocp-version)'
+        - '-prow-config-path'
+        - 'release/core-services/prow/02_config/_config.yaml'
+        - '-output-path'
+        - '/workspace'
+      env:
+        - name: KUBECONFIG
+          value: $(params.kubeconfig-dir)/kubeconfig
+      image: quay.io/opdev/preflight-trigger
+      name: preflight-trigger
+      volumeMounts:
+        - name: kubeconfig
+          mountPath: "/workspace/.kube/kubeconfig"
+          subPath: "kubeconfig"
+    - script: |
+        #!/usr/bin/env bash
+        echo "we have successfully created a ProwJob in openshift-ci"
+        echo "openshift-ci will provide cluster and run preflight"
+        echo "currently we do not have visibility into success/failure"
+        echo "for now we will succeed to move past this task"
+        echo -e "\n\nlooking around"
+        ls -lha
+      image: registry.access.redhat.com/ubi8/ubi-minimal
+      name: stdout
