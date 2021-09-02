@@ -1,6 +1,0 @@
-branch-protection: # TODO This is staged! 
-  orgs:
-    redhat-openshift-ecosystem:
-      repos:
-        community-operators-pipeline:
-          protect: false

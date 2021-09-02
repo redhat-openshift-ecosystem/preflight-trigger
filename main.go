@@ -6,6 +6,8 @@ import (
 	"flag"
 	"fmt"
 	"github.com/ghodss/yaml"
+	"github.com/openshift/ci-tools/pkg/api"
+	"github.com/openshift/ci-tools/pkg/steps/utils"
 	"github.com/openshift/ci-tools/pkg/util"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/afero"
@@ -28,9 +30,6 @@ import (
 	"sort"
 	"strings"
 	"time"
-
-	"github.com/openshift/ci-tools/pkg/api"
-	"github.com/openshift/ci-tools/pkg/steps/utils"
 )
 
 // Constants for flags
@@ -238,13 +237,14 @@ func main() {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)
-	input := strings.Builder{}
+	// TODO: disabling args for now so echo-test can run
+	/*input := strings.Builder{}
 	input.WriteString("--input-hash=")
 	for _, key := range keys {
 		input.WriteString(key)
 		input.WriteString(envvars[key])
 	}
-	prowjob.Spec.PodSpec.Containers[0].Args = append(prowjob.Spec.PodSpec.Containers[0].Args, input.String())
+	prowjob.Spec.PodSpec.Containers[0].Args = append(prowjob.Spec.PodSpec.Containers[0].Args, input.String())*/
 	prowjob.Spec.PodSpec.Containers[0].Env = append(prowjob.Spec.PodSpec.Containers[0].Env, decorate.KubeEnv(envvars)...)
 
 	if o.dryRun {
@@ -284,7 +284,7 @@ func main() {
 
 	for {
 		var w watch.Interface
-		if err = wait.ExponentialBackoff(wait.Backoff{Steps: 10, Duration: 1 * time.Second, Factor: 2}, func() (bool, error) {
+		if err = wait.ExponentialBackoff(wait.Backoff{Steps: 10, Duration: 10 * time.Second, Factor: 2}, func() (bool, error) {
 			var err2 error
 			w, err2 = pjclient.Watch(interrupts.Context(), metav1.ListOptions{FieldSelector: selector.String()})
 			if err2 != nil {
@@ -311,6 +311,7 @@ func main() {
 					ArtifactsURL: prowJobArtifactsURL,
 					URL:          prowJob.Status.URL,
 				}
+				fmt.Printf("Failure|Aborted|Error States ProwJob Result: %+v\n", pjr)
 				err = writeResultOutput(pjr, o.outputPath)
 				if err != nil {
 					logrus.Error("Unable to write prowjob result to file")
@@ -323,6 +324,7 @@ func main() {
 					URL:          prowJob.Status.URL,
 				}
 				err = writeResultOutput(pjr, o.outputPath)
+				fmt.Printf("Success State ProwJob Result: %+v\n", pjr)
 				if err != nil {
 					logrus.Error("Unable to write prowjob result to file")
 				}
