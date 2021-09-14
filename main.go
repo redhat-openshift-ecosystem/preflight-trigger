@@ -40,6 +40,14 @@ const (
 	outputFilePathOption = "output-path"
 	prowConfigPathOption = "prow-config-path"
 	releaseImageRefOption = "release-image-ref"
+	testAssetOption = "test-asset"
+	assetTypeOption = "asset-type"
+	pfltLogLevelOption = "pflt-log-level"
+	pfltLogFileOption = "pflt-log-file"
+	pfltArtifactsOption = "pflt-artifacts"
+	pfltNamespaceOption = "pflt-namespace"
+	pfltServiceAccountOption = "pflt-service-account"
+	pfltIndexImageOption = "pflt-index-image"
 )
 
 var fileSystem = afero.NewOsFs()
@@ -52,6 +60,14 @@ type options struct {
 	ocpVersion string
 	outputPath string
 	releaseImageRef string
+	testAsset string
+	assetType string
+	pfltLogLevel string
+	pfltLogFile string
+	pfltArtifacts string
+	pfltNamespace string
+	pfltServiceAccount string
+	pfltIndexImage string
 	dryRun bool
 }
 
@@ -76,6 +92,14 @@ func (o *options) gatherOptions() {
 	fs.StringVar(&o.ocpVersion, ocpVersionOption, "", "Version of OCP to use; 4.x or higher")
 	fs.StringVar(&o.outputPath, outputFilePathOption, "", "File to store JSON returned from job submission")
 	fs.StringVar(&o.releaseImageRef, releaseImageRefOption, "", "Release payload image to use for OCP deployment.")
+	fs.StringVar(&o.testAsset, testAssetOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.assetType, assetTypeOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.pfltLogLevel, pfltLogLevelOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.pfltLogFile, pfltLogFileOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.pfltArtifacts, pfltArtifactsOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.pfltNamespace, pfltNamespaceOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.pfltServiceAccount, pfltServiceAccountOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.pfltIndexImage, pfltIndexImageOption, "", "Provided to preflight check documentation")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Display the job YAML without submitting the job to Prow")
 	o.prowconfig.AddFlags(fs)
 }
@@ -94,6 +118,14 @@ func (o options) validateOptions() error {
 
 	if o.ocpVersion == "" {
 		return fmt.Errorf("%s flag is required", ocpVersionOption)
+	}
+
+	if o.testAsset == "" {
+		return fmt.Errorf("%s flag is required", testAssetOption)
+	}
+
+	if o.assetType == "" {
+		return fmt.Errorf("%s flag is required", assetTypeOption)
 	}
 
 	if !strings.HasPrefix(o.ocpVersion, "4") {
@@ -227,6 +259,12 @@ func main() {
 	envvars := map[string]string{
 		"CLUSTER_TYPE": "aws", // this would be configurable?
 		"OCP_VERSION": o.ocpVersion,
+		"PFLT_LOGLEVEL": o.pfltLogLevel,
+		"PFLT_LOGFILE": o.pfltLogFile,
+		"PFLT_ARTIFACTS": o.pfltArtifacts,
+		"PFLT_NAMESPACE": o.pfltNamespace,
+		"PFLT_SERVICEACCOUNT": o.pfltServiceAccount,
+		"PFLT_INDEXIMAGE": o.pfltIndexImage,
 	}
 	if o.releaseImageRef != "" {
 		envvars[utils.ReleaseImageEnv(api.LatestReleaseName)] = o.releaseImageRef
