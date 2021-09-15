@@ -150,3 +150,5 @@ Temporary Items
 
 .idea/
 .idea
+.config
+.operator-pipelines-config
