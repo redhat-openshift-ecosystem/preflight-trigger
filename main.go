@@ -276,13 +276,13 @@ func main() {
 	}
 	sort.Strings(keys)
 	// TODO: disabling args for now so echo-test can run
-	/*input := strings.Builder{}
+	input := strings.Builder{}
 	input.WriteString("--input-hash=")
 	for _, key := range keys {
 		input.WriteString(key)
 		input.WriteString(envvars[key])
 	}
-	prowjob.Spec.PodSpec.Containers[0].Args = append(prowjob.Spec.PodSpec.Containers[0].Args, input.String())*/
+	prowjob.Spec.PodSpec.Containers[0].Args = append(prowjob.Spec.PodSpec.Containers[0].Args, input.String())
 	prowjob.Spec.PodSpec.Containers[0].Env = append(prowjob.Spec.PodSpec.Containers[0].Env, decorate.KubeEnv(envvars)...)
 
 	if o.dryRun {
@@ -294,7 +294,6 @@ func main() {
 		os.Exit(0)
 	}
 
-	// TODO:
 	logrus.Info("getting cluster config")
 	clusterConfig, err := util.LoadClusterConfig()
 	if err != nil {
