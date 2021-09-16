@@ -1,5 +1,0 @@
-FROM registry.access.redhat.com/ubi8/go-toolset
-LABEL maintainer="mrhillsman@redhat.com"
-
-ADD preflight-trigger /usr/bin/preflight-trigger
-ENTRYPOINT ["/usr/bin/preflight-trigger"]
