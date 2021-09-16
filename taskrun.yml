@@ -1,8 +1,0 @@
-apiVersion: tekton.dev/v1beta1
-kind: TaskRun
-metadata:
-  name: preflight-trigger-task-run
-  namespace: playground
-spec:
-  taskRef:
-    name: preflight-trigger
