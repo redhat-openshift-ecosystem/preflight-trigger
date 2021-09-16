@@ -256,15 +256,32 @@ func main() {
 		logrus.WithField("job-name", o.jobName).Fatal(err)
 	}
 
-	envvars := map[string]string{
-		"CLUSTER_TYPE": "aws", // this would be configurable?
-		"OCP_VERSION": o.ocpVersion,
+	jobparams := make(map[string]string)
+
+	params := map[string]string{
 		"PFLT_LOGLEVEL": o.pfltLogLevel,
 		"PFLT_LOGFILE": o.pfltLogFile,
 		"PFLT_ARTIFACTS": o.pfltArtifacts,
 		"PFLT_NAMESPACE": o.pfltNamespace,
 		"PFLT_SERVICEACCOUNT": o.pfltServiceAccount,
 		"PFLT_INDEXIMAGE": o.pfltIndexImage,
+		"PREFLIGHT_TEST_ASSET": o.testAsset,
+		"PREFLIGHT_ASSET_TYPE": o.assetType,
+	}
+
+	for k, v := range params {
+		if v == "" {
+			continue
+		} else {
+			jobparams[k] = v
+		}
+	}
+
+	appendMultiStageParams(prowjob.Spec.PodSpec, jobparams)
+
+	envvars := map[string]string{
+		"CLUSTER_TYPE": "aws", // this would be configurable?
+		"OCP_VERSION": o.ocpVersion,
 	}
 	if o.releaseImageRef != "" {
 		envvars[utils.ReleaseImageEnv(api.LatestReleaseName)] = o.releaseImageRef
