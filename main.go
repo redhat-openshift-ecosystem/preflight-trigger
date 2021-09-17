@@ -265,8 +265,8 @@ func main() {
 		"PFLT_NAMESPACE": o.pfltNamespace,
 		"PFLT_SERVICEACCOUNT": o.pfltServiceAccount,
 		"PFLT_INDEXIMAGE": o.pfltIndexImage,
-		"PREFLIGHT_TEST_ASSET": o.testAsset,
-		"PREFLIGHT_ASSET_TYPE": o.assetType,
+		"TEST_ASSET": o.testAsset,
+		"ASSET_TYPE": o.assetType,
 	}
 
 	for k, v := range params {
