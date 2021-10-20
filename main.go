@@ -34,6 +34,7 @@ import (
 
 // Constants for flags
 const (
+	hiddenOption = "hidden"
 	jobConfigPathOption = "job-config-path"
 	jobNameOption = "job-name"
 	ocpVersionOption = "ocp-version"
@@ -48,6 +49,7 @@ const (
 	pfltNamespaceOption = "pflt-namespace"
 	pfltServiceAccountOption = "pflt-service-account"
 	pfltIndexImageOption = "pflt-index-image"
+	pfltDockerConfigOption = "pflt-docker-config"
 )
 
 var fileSystem = afero.NewOsFs()
@@ -55,6 +57,7 @@ var fs = flag.NewFlagSet(os.Args[0], flag.ExitOnError)
 var o options
 
 type options struct {
+	hidden bool
 	jobName string
 	prowconfig configflagutil.ConfigOptions
 	ocpVersion string
@@ -68,6 +71,7 @@ type options struct {
 	pfltNamespace string
 	pfltServiceAccount string
 	pfltIndexImage string
+	pfltDockerConfig string
 	dryRun bool
 }
 
@@ -100,7 +104,9 @@ func (o *options) gatherOptions() {
 	fs.StringVar(&o.pfltNamespace, pfltNamespaceOption, "", "Provided to preflight check documentation")
 	fs.StringVar(&o.pfltServiceAccount, pfltServiceAccountOption, "", "Provided to preflight check documentation")
 	fs.StringVar(&o.pfltIndexImage, pfltIndexImageOption, "", "Provided to preflight check documentation")
+	fs.StringVar(&o.pfltDockerConfig, pfltDockerConfigOption, "", "Provided to preflight check documentation")
 	fs.BoolVar(&o.dryRun, "dry-run", false, "Display the job YAML without submitting the job to Prow")
+	fs.BoolVar(&o.hidden, "hidden", false, "Hide job from Prow Deck output")
 	o.prowconfig.AddFlags(fs)
 }
 
@@ -265,6 +271,7 @@ func main() {
 		"PFLT_NAMESPACE": o.pfltNamespace,
 		"PFLT_SERVICEACCOUNT": o.pfltServiceAccount,
 		"PFLT_INDEXIMAGE": o.pfltIndexImage,
+		"PFLT_DOCKERCONFIG": o.pfltDockerConfig,
 		"TEST_ASSET": o.testAsset,
 		"ASSET_TYPE": o.assetType,
 	}
@@ -301,6 +308,10 @@ func main() {
 	}
 	prowjob.Spec.PodSpec.Containers[0].Args = append(prowjob.Spec.PodSpec.Containers[0].Args, input.String())
 	prowjob.Spec.PodSpec.Containers[0].Env = append(prowjob.Spec.PodSpec.Containers[0].Env, decorate.KubeEnv(envvars)...)
+
+	if o.hidden {
+		prowjob.Spec.Hidden = true
+	}
 
 	if o.dryRun {
 		jobAsYaml, err := yaml.Marshal(prowjob)
@@ -365,7 +376,7 @@ func main() {
 					ArtifactsURL: prowJobArtifactsURL,
 					URL:          prowJob.Status.URL,
 				}
-				fmt.Printf("Failure|Aborted|Error States ProwJob Result: %+v\n", pjr)
+				fmt.Printf("%+v\n", pjr)
 				err = writeResultOutput(pjr, o.outputPath)
 				if err != nil {
 					logrus.Error("Unable to write prowjob result to file")
@@ -378,7 +389,7 @@ func main() {
 					URL:          prowJob.Status.URL,
 				}
 				err = writeResultOutput(pjr, o.outputPath)
-				fmt.Printf("Success State ProwJob Result: %+v\n", pjr)
+				fmt.Printf("%+v\n", pjr)
 				if err != nil {
 					logrus.Error("Unable to write prowjob result to file")
 				}
