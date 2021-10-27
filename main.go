@@ -219,7 +219,7 @@ func appendMultiStageParams(podSpec *v1.PodSpec, params map[string]string) {
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, fmt.Sprintf("--multi-stage-param=%s=%s", key, params[key]))
+		podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, fmt.Sprintf("--multi-stage-param=%s=\"%s\"", key, params[key]))
 	}
 }
 
@@ -231,7 +231,7 @@ func appendMultiStageDepOverrides(podSpec *v1.PodSpec, overrides map[string]stri
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, fmt.Sprintf("--dependency-override-param=%s=%s", key, overrides[key]))
+		podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, fmt.Sprintf("--dependency-override-param=%s=\"%s\"", key, overrides[key]))
 	}
 }
 
