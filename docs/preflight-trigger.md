@@ -30,12 +30,12 @@ Create on-demand preflight jobs in openshift-ci system
 
 ### SEE ALSO
 
-* [preflight-trigger artifacts](docs/preflight-trigger_artifacts.md)	 - Get artifacts from a given openshift-ci job
-* [preflight-trigger checkhealth](docs/preflight-trigger_checkhealth.md)	 - Verify cluster under test is ready.
-* [preflight-trigger completion](docs/preflight-trigger_completion.md)	 - Generate the autocompletion script for the specified shell
-* [preflight-trigger create](docs/preflight-trigger_create.md)	 - Create contains subcommands for creating jobs and documentation.
-* [preflight-trigger decode](docs/preflight-trigger_decode.md)	 - Decode a value or local file; value or file location is required
-* [preflight-trigger decrypt](docs/preflight-trigger_decrypt.md)	 - Decrypt a GPG encrypted file or arbitrary data from stdin
-* [preflight-trigger encode](docs/preflight-trigger_encode.md)	 - Encode a value or local file; value or file location is required
-* [preflight-trigger encrypt](docs/preflight-trigger_encrypt.md)	 - Encrypt a file or arbitrary data from stdin
+* [preflight-trigger artifacts](preflight-trigger_artifacts.md)	 - Get artifacts from a given openshift-ci job
+* [preflight-trigger checkhealth](preflight-trigger_checkhealth.md)	 - Verify cluster under test is ready.
+* [preflight-trigger completion](preflight-trigger_completion.md)	 - Generate the autocompletion script for the specified shell
+* [preflight-trigger create](preflight-trigger_create.md)	 - Create contains subcommands for creating jobs and documentation.
+* [preflight-trigger decode](preflight-trigger_decode.md)	 - Decode a value or local file; value or file location is required
+* [preflight-trigger decrypt](preflight-trigger_decrypt.md)	 - Decrypt a GPG encrypted file or arbitrary data from stdin
+* [preflight-trigger encode](preflight-trigger_encode.md)	 - Encode a value or local file; value or file location is required
+* [preflight-trigger encrypt](preflight-trigger_encrypt.md)	 - Encrypt a file or arbitrary data from stdin
 

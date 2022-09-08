@@ -1,8 +1,20 @@
-## preflight-trigger
+## preflight-trigger completion
 
-Create on-demand preflight jobs in openshift-ci system
+Generate the autocompletion script for the specified shell
+
+### Synopsis
+
+Generate the autocompletion script for preflight-trigger for the specified shell.
+See each sub-command's help for details on how to use the generated script.
+
 
 ### Options
+
+```
+  -h, --help   help for completion
+```
+
+### Options inherited from parent commands
 
 ```
       --asset-type string                   Type of asset to trigger
@@ -11,7 +23,6 @@ Create on-demand preflight jobs in openshift-ci system
       --gpg-decryption-public-key string    GPG public key to use for decryption
       --gpg-encryption-private-key string   GPG private key to use for encryption
       --gpg-encryption-public-key string    GPG public key to use for encryption
-  -h, --help                                help for preflight-trigger
       --hidden                              Hide job in the list of jobs visible by deck
       --job-name string                     Name of the job to trigger
       --job-suffix string                   Suffix to append to the job name
@@ -30,12 +41,9 @@ Create on-demand preflight jobs in openshift-ci system
 
 ### SEE ALSO
 
-* [preflight-trigger artifacts](docs/preflight-trigger_artifacts.md)	 - Get artifacts from a given openshift-ci job
-* [preflight-trigger checkhealth](docs/preflight-trigger_checkhealth.md)	 - Verify cluster under test is ready.
-* [preflight-trigger completion](docs/preflight-trigger_completion.md)	 - Generate the autocompletion script for the specified shell
-* [preflight-trigger create](docs/preflight-trigger_create.md)	 - Create contains subcommands for creating jobs and documentation.
-* [preflight-trigger decode](docs/preflight-trigger_decode.md)	 - Decode a value or local file; value or file location is required
-* [preflight-trigger decrypt](docs/preflight-trigger_decrypt.md)	 - Decrypt a GPG encrypted file or arbitrary data from stdin
-* [preflight-trigger encode](docs/preflight-trigger_encode.md)	 - Encode a value or local file; value or file location is required
-* [preflight-trigger encrypt](docs/preflight-trigger_encrypt.md)	 - Encrypt a file or arbitrary data from stdin
+* [preflight-trigger](preflight-trigger.md)	 - Create on-demand preflight jobs in openshift-ci system
+* [preflight-trigger completion bash](preflight-trigger_completion_bash.md)	 - Generate the autocompletion script for bash
+* [preflight-trigger completion fish](preflight-trigger_completion_fish.md)	 - Generate the autocompletion script for fish
+* [preflight-trigger completion powershell](preflight-trigger_completion_powershell.md)	 - Generate the autocompletion script for powershell
+* [preflight-trigger completion zsh](preflight-trigger_completion_zsh.md)	 - Generate the autocompletion script for zsh
 

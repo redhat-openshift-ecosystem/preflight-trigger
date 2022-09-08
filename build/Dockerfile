@@ -1,4 +1,4 @@
-FROM registry.hub.docker.com/library/alpine
+FROM registry.redhat.io/ubi9/ubi-micro
 
 COPY preflight-trigger /usr/local/bin
 
