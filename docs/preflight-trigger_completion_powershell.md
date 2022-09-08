@@ -1,8 +1,31 @@
-## preflight-trigger
+## preflight-trigger completion powershell
 
-Create on-demand preflight jobs in openshift-ci system
+Generate the autocompletion script for powershell
+
+### Synopsis
+
+Generate the autocompletion script for powershell.
+
+To load completions in your current shell session:
+
+	preflight-trigger completion powershell | Out-String | Invoke-Expression
+
+To load completions for every new session, add the output of the above command
+to your powershell profile.
+
+
+```
+preflight-trigger completion powershell [flags]
+```
 
 ### Options
+
+```
+  -h, --help              help for powershell
+      --no-descriptions   disable completion descriptions
+```
+
+### Options inherited from parent commands
 
 ```
       --asset-type string                   Type of asset to trigger
@@ -11,7 +34,6 @@ Create on-demand preflight jobs in openshift-ci system
       --gpg-decryption-public-key string    GPG public key to use for decryption
       --gpg-encryption-private-key string   GPG private key to use for encryption
       --gpg-encryption-public-key string    GPG public key to use for encryption
-  -h, --help                                help for preflight-trigger
       --hidden                              Hide job in the list of jobs visible by deck
       --job-name string                     Name of the job to trigger
       --job-suffix string                   Suffix to append to the job name
@@ -30,12 +52,5 @@ Create on-demand preflight jobs in openshift-ci system
 
 ### SEE ALSO
 
-* [preflight-trigger artifacts](docs/preflight-trigger_artifacts.md)	 - Get artifacts from a given openshift-ci job
-* [preflight-trigger checkhealth](docs/preflight-trigger_checkhealth.md)	 - Verify cluster under test is ready.
-* [preflight-trigger completion](docs/preflight-trigger_completion.md)	 - Generate the autocompletion script for the specified shell
-* [preflight-trigger create](docs/preflight-trigger_create.md)	 - Create contains subcommands for creating jobs and documentation.
-* [preflight-trigger decode](docs/preflight-trigger_decode.md)	 - Decode a value or local file; value or file location is required
-* [preflight-trigger decrypt](docs/preflight-trigger_decrypt.md)	 - Decrypt a GPG encrypted file or arbitrary data from stdin
-* [preflight-trigger encode](docs/preflight-trigger_encode.md)	 - Encode a value or local file; value or file location is required
-* [preflight-trigger encrypt](docs/preflight-trigger_encrypt.md)	 - Encrypt a file or arbitrary data from stdin
+* [preflight-trigger completion](preflight-trigger_completion.md)	 - Generate the autocompletion script for the specified shell
 
