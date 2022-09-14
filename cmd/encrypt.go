@@ -65,7 +65,7 @@ func encryptRun(cmd *cobra.Command, args []string) {
 		}
 	}
 
-	msg := crypto.NewPlainMessageFromString(string(fcontent))
+	msg := crypto.NewPlainMessage(fcontent)
 	var publickeyobj *crypto.Key
 	var publickeyring *crypto.KeyRing
 	publickeyobj, err = crypto.NewKeyFromArmored(string(encryptionpublickey))

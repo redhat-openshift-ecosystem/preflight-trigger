@@ -82,12 +82,12 @@ func decryptRun(cmd *cobra.Command, args []string) {
 	}
 
 	if CommandFlags.OutputPath == "" {
-		_, err = os.Stdout.Write([]byte(unarmor.GetString()))
+		_, err = os.Stdout.Write(unarmor.Data)
 		if err != nil {
 			log.Fatal(err)
 		}
 	} else {
-		err = os.WriteFile(CommandFlags.OutputPath, []byte(unarmor.GetString()), 0644)
+		err = os.WriteFile(CommandFlags.OutputPath, unarmor.Data, 0644)
 		if err != nil {
 			log.Fatalf("Unable to write to %s: %s", CommandFlags.OutputPath, err)
 		}
