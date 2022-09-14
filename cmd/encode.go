@@ -68,5 +68,5 @@ func encodeRun(cmd *cobra.Command, args []string) {
 }
 
 func encode(valueToEncode string) string {
-	return base64.StdEncoding.EncodeToString([]byte(valueToEncode))
+	return base64.StdEncoding.WithPadding(base64.NoPadding).EncodeToString([]byte(valueToEncode))
 }
