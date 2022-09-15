@@ -70,7 +70,7 @@ func decodeRun(cmd *cobra.Command, args []string) {
 }
 
 func decode(valueToDecode string) string {
-	data, err := base64.StdEncoding.DecodeString(valueToDecode)
+	data, err := base64.StdEncoding.WithPadding(base64.NoPadding).DecodeString(valueToDecode)
 	if err != nil {
 		log.Fatalf("Unable to decode data: %v", err)
 	}
