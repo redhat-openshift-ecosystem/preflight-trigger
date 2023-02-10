@@ -175,7 +175,7 @@ func jobRun(cmd *cobra.Command, args []string) {
 
 	log.Print("Waiting for prowjob status...")
 	eventchannel := watcher.ResultChan()
-	timeout := time.After(time.Duration(30) * time.Minute)
+	timeout := time.After(time.Duration(90) * time.Minute)
 	ticker := time.NewTicker(time.Second)
 	defer ticker.Stop()
 
