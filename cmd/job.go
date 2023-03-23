@@ -184,7 +184,7 @@ func jobRun(cmd *cobra.Command, args []string) {
 		case event := <-eventchannel:
 			pj, ok = event.Object.(*pjapi.ProwJob)
 			if !ok {
-				log.Fatalf("Received unexpected object type from watch: object-type %T", event.Object)
+				log.Fatalf("Received unexpected object type from watch: object-type %v", event)
 			}
 
 			if pj.Status.State == pjapi.FailureState || pj.Status.State == pjapi.ErrorState || pj.Status.State == pjapi.AbortedState {
