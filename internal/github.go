@@ -2,7 +2,8 @@ package internal
 
 import (
 	"context"
-	"github.com/google/go-github/v45/github"
+
+	"github.com/google/go-github/v56/github"
 )
 
 var client = github.NewClient(nil)
