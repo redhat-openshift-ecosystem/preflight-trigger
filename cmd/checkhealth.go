@@ -5,16 +5,17 @@ package cmd
 
 import (
 	"context"
+	"log"
+	"strconv"
+	"time"
+
 	"github.com/gobuffalo/envy"
 	osconfigv1 "github.com/openshift/api/config/v1"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
-	"log"
 	ctrlrt "sigs.k8s.io/controller-runtime"
 	ctrlrtc "sigs.k8s.io/controller-runtime/pkg/client"
-	"strconv"
-	"time"
 )
 
 // checkhealthCmd represents the checkhealth command
@@ -30,8 +31,10 @@ Progrssing status is not true.'`,
 	Run:    checkhealthRun,
 }
 
-var kclient *kubernetes.Clientset
-var oclient ctrlrtc.Client
+var (
+	kclient *kubernetes.Clientset
+	oclient ctrlrtc.Client
+)
 
 func init() {
 	rootCmd.AddCommand(checkhealthCmd)
@@ -88,7 +91,9 @@ func checkreadyz() {
 	}
 
 	for i := 0; i < timeout; i++ {
-		readyz, err = kclient.CoreV1().RESTClient().Get().AbsPath("/readyz").DoRaw(context.TODO())
+		// TODO: do we want to catch this error or ignore it? Ignoring for now
+		readyz, _ = kclient.CoreV1().RESTClient().Get().AbsPath("/readyz").DoRaw(context.TODO())
+
 		if string(readyz) == "ok" {
 			log.Println("/readyz is ok")
 			return
