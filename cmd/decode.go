@@ -27,7 +27,6 @@ func init() {
 	decodeCmd.Flags().StringVarP(&CommandFlags.FileToDecode, "file", "", "", "Path of file to decode")
 	decodeCmd.Flags().BoolVarP(&CommandFlags.UseStdin, "stdin", "", false, "Read value from stdin")
 	decodeCmd.MarkFlagsMutuallyExclusive("value", "file")
-
 }
 
 func decodePreRun(cmd *cobra.Command, args []string) {
@@ -62,7 +61,7 @@ func decodeRun(cmd *cobra.Command, args []string) {
 			log.Fatalf("Unable to write decoded data to stdout: %v", err)
 		}
 	} else {
-		err := os.WriteFile(CommandFlags.OutputPath, []byte(decodedData), 0644)
+		err := os.WriteFile(CommandFlags.OutputPath, []byte(decodedData), 0o644)
 		if err != nil {
 			log.Fatalf("Unable to write decoded data to file: %v", err)
 		}

@@ -5,9 +5,10 @@ package cmd
 
 import (
 	"encoding/base64"
-	"github.com/spf13/cobra"
 	"log"
 	"os"
+
+	"github.com/spf13/cobra"
 )
 
 // encodeCmd represents the encode command
@@ -61,7 +62,7 @@ func encodeRun(cmd *cobra.Command, args []string) {
 		}
 	} else {
 		log.Printf("Writing encoded data to file %s", CommandFlags.OutputPath)
-		if err := os.WriteFile(CommandFlags.OutputPath, []byte(encodedData), 0644); err != nil {
+		if err := os.WriteFile(CommandFlags.OutputPath, []byte(encodedData), 0o644); err != nil {
 			log.Fatalf("Unable to write encoded data to file: %v", err)
 		}
 	}

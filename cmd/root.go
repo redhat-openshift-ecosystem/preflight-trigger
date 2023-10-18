@@ -4,12 +4,12 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	configflagutil "k8s.io/test-infra/prow/flagutil/config"
 	"log"
 	"os"
 	"reflect"
 
 	"github.com/spf13/cobra"
+	configflagutil "k8s.io/test-infra/prow/flagutil/config"
 )
 
 type FlagsData struct {
