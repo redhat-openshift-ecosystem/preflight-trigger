@@ -4,9 +4,11 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package main
 
 import (
-	"github.com/redhat-openshift-ecosystem/preflight-trigger/cmd"
-	"k8s.io/test-infra/prow/interrupts"
 	"os"
+
+	"github.com/redhat-openshift-ecosystem/preflight-trigger/cmd"
+
+	"k8s.io/test-infra/prow/interrupts"
 )
 
 func main() {

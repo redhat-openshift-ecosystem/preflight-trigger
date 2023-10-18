@@ -5,18 +5,20 @@ package cmd
 
 import (
 	"context"
+	"log"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/redhat-openshift-ecosystem/preflight-trigger/internal"
+
 	"github.com/ghodss/yaml"
 	"github.com/openshift/ci-tools/pkg/util"
-	. "github.com/redhat-openshift-ecosystem/preflight-trigger/internal"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	pjapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 	pjclient "k8s.io/test-infra/prow/client/clientset/versioned"
-	"log"
-	"os"
-	"strings"
-	"time"
 )
 
 // jobCmd represents the job command
@@ -81,21 +83,21 @@ func jobPreRun(cmd *cobra.Command, args []string) {
 
 	validateJobFlags()
 
-	config, err := GetGitHubFile("openshift", "release", "core-services/prow/02_config/_config.yaml")
+	config, err := internal.GetGitHubFile("openshift", "release", "core-services/prow/02_config/_config.yaml")
 	if err != nil {
 		log.Fatalf("Error getting _config.yaml: %v", err)
 	}
 
-	if err = WriteToFileSystem(AppFs, config, "_config.yaml"); err != nil {
+	if err = internal.WriteToFileSystem(internal.AppFs, config, "_config.yaml"); err != nil {
 		log.Fatalf("Unable to write _config.yaml: %v", err)
 	}
 
-	periodic, err := GetGitHubFile("openshift", "release", "ci-operator/jobs/redhat-openshift-ecosystem/"+CommandFlags.CIRepo+"/redhat-openshift-ecosystem-"+CommandFlags.CIRepo+"-ocp-"+CommandFlags.OcpVersion+"-periodics.yaml")
+	periodic, err := internal.GetGitHubFile("openshift", "release", "ci-operator/jobs/redhat-openshift-ecosystem/"+CommandFlags.CIRepo+"/redhat-openshift-ecosystem-"+CommandFlags.CIRepo+"-ocp-"+CommandFlags.OcpVersion+"-periodics.yaml")
 	if err != nil {
 		log.Fatalf("Error getting redhat-openshift-ecosystem-%s-ocp-%s-periodics.yaml: %v", CommandFlags.CIRepo, CommandFlags.OcpVersion, err)
 	}
 
-	if err = WriteToFileSystem(AppFs, periodic, "redhat-openshift-ecosystem-"+CommandFlags.CIRepo+"-ocp-"+CommandFlags.OcpVersion+"-periodics.yaml"); err != nil {
+	if err = internal.WriteToFileSystem(internal.AppFs, periodic, "redhat-openshift-ecosystem-"+CommandFlags.CIRepo+"-ocp-"+CommandFlags.OcpVersion+"-periodics.yaml"); err != nil {
 		log.Fatalf("Unable to write periodic job yaml: %v", err)
 	}
 
@@ -118,7 +120,7 @@ func jobRun(cmd *cobra.Command, args []string) {
 	}
 
 	config := configagent.Config()
-	jobmanifest, err := CreateProwJobManifest(CommandFlags.JobName, config)
+	jobmanifest, err := internal.CreateProwJobManifest(CommandFlags.JobName, config)
 	if err != nil {
 		log.Fatalf("CreateProwJobManifest failed: %v", err)
 	}
@@ -138,8 +140,8 @@ func jobRun(cmd *cobra.Command, args []string) {
 		"TEST_ASSET":          CommandFlags.TestAsset,
 		"ASSET_TYPE":          CommandFlags.AssetType,
 	}
-	AppendMultiStageParams(jobmanifest.Spec.PodSpec, multistageparams)
-	SetInputHash(jobmanifest.Spec.PodSpec, CommandFlags.ClusterType, CommandFlags.OcpVersion)
+	internal.AppendMultiStageParams(jobmanifest.Spec.PodSpec, multistageparams)
+	internal.SetInputHash(jobmanifest.Spec.PodSpec, CommandFlags.ClusterType, CommandFlags.OcpVersion)
 
 	if CommandFlags.DryRun {
 		yamloutput, err := yaml.Marshal(jobmanifest)
@@ -168,7 +170,7 @@ func jobRun(cmd *cobra.Command, args []string) {
 	selector := fields.SelectorFromSet(map[string]string{"metadata.name": pj.Name})
 
 	var ok bool
-	watcher, err := ProwJobWatcher(pj.Namespace, pjcs, selector.String())
+	watcher, err := internal.ProwJobWatcher(pj.Namespace, pjcs, selector.String())
 	if err != nil {
 		log.Fatalf("Error watching prowjob: %v", err)
 	}
@@ -188,14 +190,14 @@ func jobRun(cmd *cobra.Command, args []string) {
 			}
 
 			if pj.Status.State == pjapi.FailureState || pj.Status.State == pjapi.ErrorState || pj.Status.State == pjapi.AbortedState {
-				ProwJobFailure(pj, config, CommandFlags.OutputPath)
+				internal.ProwJobFailure(pj, config, CommandFlags.OutputPath)
 			}
 
 			if pj.Status.State == pjapi.SuccessState {
-				ProwJobSuccess(pj, config, CommandFlags.OutputPath)
+				internal.ProwJobSuccess(pj, config, CommandFlags.OutputPath)
 			}
 		case <-timeout:
-			ProwJobFailure(pj, config, CommandFlags.OutputPath)
+			internal.ProwJobFailure(pj, config, CommandFlags.OutputPath)
 		default:
 			continue
 		}

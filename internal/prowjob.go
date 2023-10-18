@@ -5,7 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	v1 "k8s.io/api/core/v1"
+	"log"
+	"os"
+	"sort"
+	"strings"
+	"time"
+
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
@@ -16,11 +22,6 @@ import (
 	"k8s.io/test-infra/prow/pjutil"
 	"k8s.io/test-infra/prow/pod-utils/decorate"
 	"k8s.io/test-infra/prow/pod-utils/downwardapi"
-	"log"
-	"os"
-	"sort"
-	"strings"
-	"time"
 )
 
 type prowjobResult struct {
@@ -79,7 +80,7 @@ func writeResultOutput(pjr jobResult, outputPath string) error {
 		return err
 	}
 
-	err = os.WriteFile(outputPath, pjrjson, 0755)
+	err = os.WriteFile(outputPath, pjrjson, 0o755)
 	if err != nil {
 		log.Fatalf("Error writing result to file: %v", err)
 		return err
@@ -88,7 +89,7 @@ func writeResultOutput(pjr jobResult, outputPath string) error {
 	return nil
 }
 
-func AppendMultiStageParams(podspec *v1.PodSpec, params map[string]string) {
+func AppendMultiStageParams(podspec *corev1.PodSpec, params map[string]string) {
 	// For execution purposes, the order isn't super important, but in order to allow for
 	// consistent test verification we need to sort the params.
 	keys := make([]string, 0, len(params))
@@ -103,7 +104,7 @@ func AppendMultiStageParams(podspec *v1.PodSpec, params map[string]string) {
 	}
 }
 
-func SetInputHash(podspec *v1.PodSpec, clustertype, ocpversion string) {
+func SetInputHash(podspec *corev1.PodSpec, clustertype, ocpversion string) {
 	envvars := map[string]string{"CLUSTER_TYPE": clustertype, "OCP_VERSION": ocpversion}
 	inputhash := strings.Builder{}
 	inputhash.WriteString("--input-hash=")
@@ -159,7 +160,6 @@ func ProwJobWatcher(namespace string, pjcs *pjclient.Clientset, selector string)
 
 			return true, nil
 		})
-
 	if err != nil {
 		log.Fatalf("%v", err)
 	}

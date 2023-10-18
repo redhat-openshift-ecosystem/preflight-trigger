@@ -4,10 +4,11 @@ Copyright © 2022 NAME HERE <EMAIL ADDRESS>
 package cmd
 
 import (
-	configflagutil "k8s.io/test-infra/prow/flagutil/config"
 	"log"
 	"os"
 	"reflect"
+
+	configflagutil "k8s.io/test-infra/prow/flagutil/config"
 
 	"github.com/spf13/cobra"
 )

@@ -7,14 +7,16 @@ import (
 	"archive/tar"
 	"compress/gzip"
 	"encoding/json"
-	"github.com/spf13/cobra"
 	"io"
-	pjapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/spf13/cobra"
+
+	pjapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
 )
 
 // artifactsCmd represents the artifacts command
@@ -139,7 +141,7 @@ func untarArtifacts(tarball, target string) bool {
 
 		switch header.Typeflag {
 		case tar.TypeDir:
-			err = os.MkdirAll(filepath.Join(target, header.Name), 0755)
+			err = os.MkdirAll(filepath.Join(target, header.Name), 0o755)
 			if err != nil {
 				log.Printf("Unable to create directory: %v", err)
 				return false
@@ -192,13 +194,13 @@ func artifactsRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if !ok {
-		artifacts_base_url := "https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/origin-ci-test/logs/"
-		artifacts_job_id := getJobID()
-		artifacts_tarball_uri := artifacts_base_url + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
-			"-ocp-" + CommandFlags.OcpVersion + "-preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/" + artifacts_job_id +
+		artifactsBaseURL := "https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/origin-ci-test/logs/"
+		artifactsJobID := getJobID()
+		artifactsTarballURI := artifactsBaseURL + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
+			"-ocp-" + CommandFlags.OcpVersion + "-preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/" + artifactsJobID +
 			"/artifacts/preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/operator-pipelines-preflight-" + CommandFlags.CIJobs + "-encrypt/artifacts/preflight.tar.gz.asc"
 
-		dok := downloadArtifacts(artifacts_tarball_uri)
+		dok := downloadArtifacts(artifactsTarballURI)
 		if !dok {
 			log.Fatalf("Unable to download preflight.tar.gz.asc file")
 		}

@@ -2,7 +2,8 @@ package internal
 
 import (
 	"context"
-	"github.com/google/go-github/v45/github"
+
+	"github.com/google/go-github/v56/github"
 )
 
 var client = github.NewClient(nil)
@@ -23,7 +24,7 @@ func GetGitHubFile(owner, repo, path string) (string, error) {
 }
 
 // example of getting periodic job file from github
-// curl -s https://api.github.com/repos/openshift/release/contents/ci-operator/jobs/redhat-openshift-ecosystem/preflight/redhat-openshift-ecosystem-preflight-ocp-4.10-periodics.yaml|jq -r '.content|split("\n")|join("")|@base64d'
+// curl -s https://api.github.com/repos/openshift/release/contents/ci-operator/jobs/redhat-openshift-ecosystem/preflight/redhat-openshift-ecosystem-preflight-ocp-4.10-periodics.yaml |jq -r '.content|split("\n")|join("")|@base64d'
 
 // example of getting openshift-ci config file from github
-// curl -s https://api.github.com/repos/openshift/release/contents/core-services/prow/02_config/_config.yaml|jq -r '.content|split("\n")|join("")|@base64d'
+// curl -s https://api.github.com/repos/openshift/release/contents/core-services/prow/02_config/_config.yaml |jq -r '.content|split("\n")|join("")|@base64d'
