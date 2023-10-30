@@ -2,15 +2,20 @@ package internal
 
 import (
 	"context"
+	"os"
 
 	"github.com/google/go-github/v56/github"
 )
 
-var client = github.NewClient(nil)
-
 // GetGitHubFile accepts a repository owner and name and path and returns the contents of the file at that path.
 func GetGitHubFile(owner, repo, path string) (string, error) {
-	content, _, _, err := client.Repositories.GetContents(context.TODO(), owner, repo, path, nil)
+	// checking to see if an auth token was set as an ENV, if so create the gh client with the token
+	githubClient := github.NewClient(nil)
+	if githubAuthToken, found := os.LookupEnv("GITHUB_AUTH_TOKEN"); found && githubAuthToken != "" {
+		githubClient = githubClient.WithAuthToken(githubAuthToken)
+	}
+
+	content, _, _, err := githubClient.Repositories.GetContents(context.TODO(), owner, repo, path, nil)
 	if err != nil {
 		return "", err
 	}
