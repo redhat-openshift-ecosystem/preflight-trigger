@@ -12,7 +12,7 @@ require (
 	github.com/spf13/afero v1.10.0
 	github.com/spf13/cobra v1.7.0
 	k8s.io/api v0.27.2
-	k8s.io/apimachinery v0.27.3
+	k8s.io/apimachinery v0.28.3
 	k8s.io/client-go v0.27.2
 	k8s.io/test-infra v0.0.0-20230928115035-61f80eaf9972
 	sigs.k8s.io/controller-runtime v0.15.2
@@ -64,6 +64,7 @@ require (
 	github.com/gomodule/redigo v1.8.5 // indirect
 	github.com/google/btree v1.0.1 // indirect
 	github.com/google/gnostic v0.6.9 // indirect
+	github.com/google/gnostic-models v0.6.8 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/go-containerregistry v0.16.1 // indirect
 	github.com/google/go-querystring v1.1.0 // indirect
@@ -143,7 +144,7 @@ require (
 	k8s.io/apiextensions-apiserver v0.27.2 // indirect
 	k8s.io/component-base v0.27.2 // indirect
 	k8s.io/klog/v2 v2.100.1 // indirect
-	k8s.io/kube-openapi v0.0.0-20230525220651-2546d827e515 // indirect
+	k8s.io/kube-openapi v0.0.0-20230717233707-2695361300d9 // indirect
 	k8s.io/utils v0.0.0-20230505201702-9f6742963106 // indirect
 	knative.dev/pkg v0.0.0-20230718152110-aef227e72ead // indirect
 	sigs.k8s.io/json v0.0.0-20221116044647-bc3834ca7abd // indirect
