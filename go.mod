@@ -3,7 +3,7 @@ module github.com/redhat-openshift-ecosystem/preflight-trigger
 go 1.21
 
 require (
-	github.com/ProtonMail/gopenpgp/v2 v2.7.3
+	github.com/ProtonMail/gopenpgp/v2 v2.7.4
 	github.com/ghodss/yaml v1.0.0
 	github.com/gobuffalo/envy v1.10.2
 	github.com/google/go-github/v56 v56.0.0
