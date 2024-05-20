@@ -13,12 +13,11 @@ import (
 	"github.com/redhat-openshift-ecosystem/preflight-trigger/internal"
 
 	"github.com/ghodss/yaml"
-	"github.com/openshift/ci-tools/pkg/util"
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
-	pjapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
-	pjclient "k8s.io/test-infra/prow/client/clientset/versioned"
+	pjapi "sigs.k8s.io/prow/pkg/apis/prowjobs/v1"
+	pjclient "sigs.k8s.io/prow/pkg/client/clientset/versioned"
 )
 
 // jobCmd represents the job command
@@ -152,7 +151,7 @@ func jobRun(cmd *cobra.Command, args []string) {
 		os.Exit(0)
 	}
 
-	clusterconfig, err := util.LoadClusterConfig()
+	clusterconfig, err := internal.LoadClusterConfig()
 	if err != nil {
 		log.Fatalf("Error loading clusterconfig: %v", err)
 	}
