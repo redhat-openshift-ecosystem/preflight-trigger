@@ -9,7 +9,7 @@ import (
 	"reflect"
 
 	"github.com/spf13/cobra"
-	configflagutil "k8s.io/test-infra/prow/flagutil/config"
+	configflagutil "sigs.k8s.io/prow/pkg/flagutil/config"
 )
 
 type FlagsData struct {

@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
-	pjapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
+	pjapi "sigs.k8s.io/prow/pkg/apis/prowjobs/v1"
 )
 
 // artifactsCmd represents the artifacts command

@@ -8,7 +8,7 @@ import (
 
 	"github.com/redhat-openshift-ecosystem/preflight-trigger/cmd"
 
-	"k8s.io/test-infra/prow/interrupts"
+	"sigs.k8s.io/prow/pkg/interrupts"
 )
 
 func main() {

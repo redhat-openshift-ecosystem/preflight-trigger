@@ -15,13 +15,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"k8s.io/apimachinery/pkg/watch"
-	pjapi "k8s.io/test-infra/prow/apis/prowjobs/v1"
-	pjclient "k8s.io/test-infra/prow/client/clientset/versioned"
-	prowconfig "k8s.io/test-infra/prow/config"
-	"k8s.io/test-infra/prow/gcsupload"
-	"k8s.io/test-infra/prow/pjutil"
-	"k8s.io/test-infra/prow/pod-utils/decorate"
-	"k8s.io/test-infra/prow/pod-utils/downwardapi"
+	pjapi "sigs.k8s.io/prow/pkg/apis/prowjobs/v1"
+	pjclient "sigs.k8s.io/prow/pkg/client/clientset/versioned"
+	prowconfig "sigs.k8s.io/prow/pkg/config"
+	"sigs.k8s.io/prow/pkg/gcsupload"
+	"sigs.k8s.io/prow/pkg/pjutil"
+	"sigs.k8s.io/prow/pkg/pod-utils/decorate"
+	"sigs.k8s.io/prow/pkg/pod-utils/downwardapi"
 )
 
 type prowjobResult struct {
