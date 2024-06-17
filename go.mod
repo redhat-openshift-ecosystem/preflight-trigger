@@ -11,10 +11,10 @@ require (
 	github.com/google/go-github/v56 v56.0.0
 	github.com/openshift/api v0.0.0-20240518060631-280767ad03ed
 	github.com/spf13/afero v1.11.0
-	github.com/spf13/cobra v1.8.0
-	k8s.io/api v0.30.1
-	k8s.io/apimachinery v0.30.1
-	k8s.io/client-go v0.30.1
+	github.com/spf13/cobra v1.8.1
+	k8s.io/api v0.30.2
+	k8s.io/apimachinery v0.30.2
+	k8s.io/client-go v0.30.2
 	sigs.k8s.io/controller-runtime v0.18.4
 	sigs.k8s.io/prow v0.0.0-20240517154251-ea10bd8144c3
 )
@@ -42,7 +42,7 @@ require (
 	github.com/cjwagner/httpcache v0.0.0-20230907212505-d4841bbad466 // indirect
 	github.com/clarketm/json v1.13.4 // indirect
 	github.com/cloudflare/circl v1.3.3 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.4 // indirect
 	github.com/danwakefield/fnmatch v0.0.0-20160403171240-cbb64ac3d964 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/denormal/go-gitignore v0.0.0-20180930084346-ae8ad1d07817 // indirect
