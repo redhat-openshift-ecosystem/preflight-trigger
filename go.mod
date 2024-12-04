@@ -1,8 +1,6 @@
 module github.com/redhat-openshift-ecosystem/preflight-trigger
 
-go 1.22.0
-
-toolchain go1.22.1
+go 1.23.2
 
 require (
 	github.com/ProtonMail/gopenpgp/v2 v2.8.1
