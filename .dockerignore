@@ -1,0 +1,9 @@
+.github
+docs
+.gitignore
+.golangci.yaml
+LICENSE
+Makefile
+OWNERS
+README.md
+TESTING.md

@@ -60,11 +60,7 @@ func validateJobFlags() {
 }
 
 func setJobSuffix() {
-	if CommandFlags.OcpVersion == "4.6" || CommandFlags.OcpVersion == "4.7" {
-		CommandFlags.JobSuffix = "aws"
-	} else {
-		CommandFlags.JobSuffix = "claim"
-	}
+	CommandFlags.JobSuffix = "claim"
 }
 
 func jobPreRun(cmd *cobra.Command, args []string) {
