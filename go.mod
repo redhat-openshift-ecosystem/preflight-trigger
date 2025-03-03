@@ -3,7 +3,7 @@ module github.com/redhat-openshift-ecosystem/preflight-trigger
 go 1.23.2
 
 require (
-	github.com/ProtonMail/gopenpgp/v2 v2.8.2
+	github.com/ProtonMail/gopenpgp/v2 v2.8.3
 	github.com/ghodss/yaml v1.0.0
 	github.com/gobuffalo/envy v1.10.2
 	github.com/google/go-github/v56 v56.0.0
@@ -33,7 +33,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/exporter/metric v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.48.1 // indirect
 	github.com/GoogleCloudPlatform/testgrid v0.0.123 // indirect
-	github.com/ProtonMail/go-crypto v1.1.4 // indirect
+	github.com/ProtonMail/go-crypto v1.1.6 // indirect
 	github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f // indirect
 	github.com/andygrunwald/go-jira v1.14.0 // indirect
 	github.com/aws/aws-sdk-go v1.44.116 // indirect
