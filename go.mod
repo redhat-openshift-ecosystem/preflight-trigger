@@ -1,6 +1,6 @@
 module github.com/redhat-openshift-ecosystem/preflight-trigger
 
-go 1.23.2
+go 1.24.1
 
 require (
 	github.com/ProtonMail/gopenpgp/v2 v2.8.3
@@ -8,11 +8,11 @@ require (
 	github.com/gobuffalo/envy v1.10.2
 	github.com/google/go-github/v56 v56.0.0
 	github.com/openshift/api v0.0.0-20240518060631-280767ad03ed
-	github.com/spf13/afero v1.12.0
+	github.com/spf13/afero v1.14.0
 	github.com/spf13/cobra v1.9.1
-	k8s.io/api v0.32.2
-	k8s.io/apimachinery v0.32.2
-	k8s.io/client-go v0.32.2
+	k8s.io/api v0.32.3
+	k8s.io/apimachinery v0.32.3
+	k8s.io/client-go v0.32.3
 	sigs.k8s.io/controller-runtime v0.20.3
 	sigs.k8s.io/prow v0.0.0-20240517154251-ea10bd8144c3
 )
@@ -142,10 +142,10 @@ require (
 	golang.org/x/mod v0.21.0 // indirect
 	golang.org/x/net v0.33.0 // indirect
 	golang.org/x/oauth2 v0.25.0 // indirect
-	golang.org/x/sync v0.10.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/term v0.28.0 // indirect
-	golang.org/x/text v0.21.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	golang.org/x/time v0.8.0 // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	gomodules.xyz/jsonpatch/v2 v2.4.0 // indirect
