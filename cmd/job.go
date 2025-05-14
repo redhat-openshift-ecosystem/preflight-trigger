@@ -113,7 +113,7 @@ func jobPreRun(cmd *cobra.Command, args []string) {
 }
 
 func jobRun(cmd *cobra.Command, args []string) {
-	configagent, err := CommandFlags.ConfigOptions.ConfigAgent()
+	configagent, err := CommandFlags.ConfigAgent()
 	if err != nil {
 		log.Fatalf("%v", err)
 	}
