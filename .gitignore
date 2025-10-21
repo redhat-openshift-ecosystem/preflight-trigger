@@ -6,9 +6,11 @@ dev
 .dev
 .idea
 *.yaml
+!/.github/**/*.yaml
 *.public
 *.private
 *.yml
+!/.github/**/*.yml
 *.json.*
 *.json
 *.gpg
