@@ -12,7 +12,7 @@ ARG OS
 # Build the preflight binary
 COPY . /go/src/preflight-trigger
 WORKDIR /go/src/preflight-trigger
-RUN make build
+RUN make build RELEASE_TAG=${release_tag}
 
 
 FROM registry.access.redhat.com/ubi9/ubi-micro:latest
