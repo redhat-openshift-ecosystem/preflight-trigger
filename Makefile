@@ -8,12 +8,13 @@ export CONTAINER_ENGINE ?= podman
 export BIN_NAME
 export REGISTRY ?= quay.io
 export REGISTRY_NAMESPACE ?= opdev
+VERSION=$(shell git rev-parse HEAD)
 export RELEASE_TAG ?= "0.0.0"
 
 
 .PHONY: binary-build
 binary-build:
-	$(CONTAINER_ENGINE) run --rm -v $(PWD):/usr/src/$(BIN_NAME) -w /usr/src/$(BIN_NAME) -e GOOS=linux -e GOARCH=amd64 docker.io/library/golang:alpine go build -o $(BIN_NAME)
+	$(CONTAINER_ENGINE) run --rm -v $(PWD):/usr/src/$(BIN_NAME) -w /usr/src/$(BIN_NAME) -e GOOS=linux -e GOARCH=amd64 docker.io/library/golang:alpine go build -ldflags "-X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=$(RELEASE_TAG)" -o $(BIN_NAME)
 
 .PHONY: image-build
 image-build:
@@ -25,7 +26,7 @@ image-push:
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build -o $(BIN_NAME) main.go
+	CGO_ENABLED=0 go build -ldflags "-X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=$(RELEASE_TAG)" -o $(BIN_NAME) main.go
 	@ls | grep -e '^preflight-trigger$$' &> /dev/null
 
 .PHONY: vet
@@ -46,12 +47,18 @@ fmt: gofumpt
 lint: golangci-lint ## Run golangci-lint linter checks.
 	$(GOLANGCI_LINT) run
 
+.PHONY: test
+test:
+	go test -v $$(go list ./...) \
+	-ldflags "-X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=bar -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=foo"
+
 .PHONY: cover
 cover:
 	go test -v \
-	 $$(go list ./...) \
-	 -race \
-	 -cover -coverprofile=coverage.out
+	$$(go list ./...) \
+	-ldflags "-X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=bar -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=foo" \
+	-race \
+	-cover -coverprofile=coverage.out
 
 GOFUMPT = $(shell pwd)/bin/gofumpt
 gofumpt: ## Download envtest-setup locally if necessary.

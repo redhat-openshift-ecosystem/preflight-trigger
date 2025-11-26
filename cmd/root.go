@@ -10,6 +10,8 @@ import (
 
 	"github.com/spf13/cobra"
 	configflagutil "sigs.k8s.io/prow/pkg/flagutil/config"
+
+	"github.com/redhat-openshift-ecosystem/preflight-trigger/version"
 )
 
 type FlagsData struct {
@@ -58,9 +60,10 @@ var CommandFlags FlagsData
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "preflight-trigger",
-	Short: "Create on-demand preflight jobs in openshift-ci system",
-	Long:  ``,
+	Use:     "preflight-trigger",
+	Short:   "Create on-demand preflight jobs in openshift-ci system",
+	Long:    ``,
+	Version: version.Version.String(),
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
