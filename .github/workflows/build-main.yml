@@ -17,10 +17,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
+      with:
+        persist-credentials: false
+        # Get tags and all history in order to find latest tag in later step
+        fetch-depth: 0
+        fetch-tags: true
+
     - name: Set Env Tags
-      run: |
-        git fetch --tags
-        echo "RELEASE_TAG=$(git describe --abbrev=0 --tags)" >> "${GITHUB_ENV}"
+      run: echo "RELEASE_TAG=$(git describe --abbrev=0 --tags)" >> "${GITHUB_ENV}"
+
     - name: set short sha
       run: echo SHA_SHORT=$(git rev-parse --short HEAD) >> $GITHUB_ENV
 
