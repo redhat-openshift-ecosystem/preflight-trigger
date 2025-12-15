@@ -7,14 +7,14 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/gobuffalo/envy v1.10.2
 	github.com/google/go-github/v56 v56.0.0
-	github.com/onsi/ginkgo/v2 v2.27.2
-	github.com/onsi/gomega v1.38.2
+	github.com/onsi/ginkgo/v2 v2.27.3
+	github.com/onsi/gomega v1.38.3
 	github.com/openshift/api v0.0.0-20251015135203-5d856d3e8354
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
-	k8s.io/api v0.34.2
-	k8s.io/apimachinery v0.34.2
-	k8s.io/client-go v0.34.2
+	k8s.io/api v0.34.3
+	k8s.io/apimachinery v0.34.3
+	k8s.io/client-go v0.34.3
 	sigs.k8s.io/controller-runtime v0.22.4
 	sigs.k8s.io/prow v0.0.0-20251014152736-8026e80373f7
 )
