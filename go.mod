@@ -12,9 +12,9 @@ require (
 	github.com/openshift/api v0.0.0-20251015135203-5d856d3e8354
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
-	k8s.io/api v0.35.0
-	k8s.io/apimachinery v0.35.0
-	k8s.io/client-go v0.35.0
+	k8s.io/api v0.35.1
+	k8s.io/apimachinery v0.35.1
+	k8s.io/client-go v0.35.1
 	sigs.k8s.io/controller-runtime v0.23.1
 	sigs.k8s.io/prow v0.0.0-20251014152736-8026e80373f7
 )
