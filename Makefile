@@ -14,7 +14,7 @@ export RELEASE_TAG ?= "0.0.0"
 
 .PHONY: binary-build
 binary-build:
-	$(CONTAINER_ENGINE) run --rm -v $(PWD):/usr/src/$(BIN_NAME) -w /usr/src/$(BIN_NAME) -e GOOS=linux -e GOARCH=amd64 docker.io/library/golang:alpine go build -ldflags "-X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=$(RELEASE_TAG)" -o $(BIN_NAME)
+	$(CONTAINER_ENGINE) run --rm -v $(PWD):/usr/src/$(BIN_NAME) -w /usr/src/$(BIN_NAME) -e GOOS=linux -e GOARCH=amd64 docker.io/library/golang:alpine go build -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=$(RELEASE_TAG)" -o $(BIN_NAME)
 
 .PHONY: image-build
 image-build:
@@ -26,7 +26,7 @@ image-push:
 
 .PHONY: build
 build:
-	CGO_ENABLED=0 go build -ldflags "-X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=$(RELEASE_TAG)" -o $(BIN_NAME) main.go
+	CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.commit=$(VERSION) -X github.com/redhat-openshift-ecosystem/preflight-trigger/version.version=$(RELEASE_TAG)" -o $(BIN_NAME) main.go
 	@ls | grep -e '^preflight-trigger$$' &> /dev/null
 
 .PHONY: vet
