@@ -8,7 +8,6 @@ import (
 	"os"
 
 	"github.com/ProtonMail/gopenpgp/v2/crypto"
-	"github.com/gobuffalo/envy"
 	"github.com/spf13/cobra"
 )
 
@@ -28,7 +27,7 @@ func init() {
 }
 
 func decryptPreRun(cmd *cobra.Command, args []string) {
-	CommandFlags.GPGPassphrase = envy.Get("GPG_PASSPHRASE", "")
+	CommandFlags.GPGPassphrase = os.Getenv("GPG_PASSPHRASE")
 }
 
 func decryptRun(cmd *cobra.Command, args []string) {

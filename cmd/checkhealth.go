@@ -6,10 +6,10 @@ package cmd
 import (
 	"context"
 	"log"
+	"os"
 	"strconv"
 	"time"
 
-	"github.com/gobuffalo/envy"
 	osconfigv1 "github.com/openshift/api/config/v1"
 	"github.com/spf13/cobra"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -34,6 +34,7 @@ Progrssing status is not true.'`,
 var (
 	kclient *kubernetes.Clientset
 	oclient ctrlrtc.Client
+	timeout int
 )
 
 func init() {
@@ -56,16 +57,19 @@ func checkhealthPreRun(cmd *cobra.Command, args []string) {
 	if err != nil {
 		log.Fatalf("Error getting OpenShift config client: %s", err)
 	}
+
+	if val, found := os.LookupEnv("OPERATOR_HEALTH_TIMEOUT"); found {
+		timeout, err = strconv.Atoi(val)
+		if err != nil {
+			log.Fatalf("Error converting OPERATOR_HEALTH_TIMEOUT envvar to int: %s", err)
+		}
+	} else {
+		timeout = 10
+	}
 }
 
 func checkhealthRun(cmd *cobra.Command, args []string) {
 	checkreadyz()
-
-	oht := envy.Get("OPERATOR_HEALTH_TIMEOUT", "10")
-	timeout, err := strconv.Atoi(oht)
-	if err != nil {
-		log.Fatalf("Error converting OPERATOR_HEALTH_TIMEOUT envvar to int: %s", err)
-	}
 
 	for i := 0; i < timeout; i++ {
 		var cvok bool
@@ -84,11 +88,6 @@ func checkhealthRun(cmd *cobra.Command, args []string) {
 
 func checkreadyz() {
 	var readyz []byte
-	oht := envy.Get("OPERATOR_HEALTH_TIMEOUT", "10")
-	timeout, err := strconv.Atoi(oht)
-	if err != nil {
-		log.Fatalf("Error converting OPERATOR_HEALTH_TIMEOUT envvar to int: %s", err)
-	}
 
 	for i := 0; i < timeout; i++ {
 		// TODO: do we want to catch this error or ignore it? Ignoring for now
@@ -126,14 +125,8 @@ func checkclusterversion() bool {
 }
 
 func checkclusteroperators() bool {
-	oht := envy.Get("OPERATOR_HEALTH_TIMEOUT", "10")
-	_, err := strconv.Atoi(oht)
-	if err != nil {
-		log.Fatalf("Error converting OPERATOR_HEALTH_TIMEOUT envvar to int: %s", err)
-	}
-
 	col := osconfigv1.ClusterOperatorList{}
-	err = oclient.List(context.Background(), &col)
+	err := oclient.List(context.Background(), &col)
 	if err != nil {
 		log.Fatalf("Unable to list cluster operators: %v", err)
 	}
