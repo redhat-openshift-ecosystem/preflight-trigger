@@ -33,21 +33,21 @@ var _ = Describe("version package utility", func() {
 	// this in Preflight Results.
 	Context("When using a VersionContext", func() {
 		It("should have JSON struct tags on fields", func() {
-			nf, nexists := reflect.TypeOf(&Version).Elem().FieldByName("Name") // The struct key!
+			nf, nexists := reflect.TypeFor[VersionContext]().FieldByName("Name") // The struct key!
 			Expect(nexists).To(BeTrue())
 			Expect(string(nf.Tag)).To(Equal(`json:"name"`)) // the tag
 
-			vf, vexists := reflect.TypeOf(&Version).Elem().FieldByName("Version")
+			vf, vexists := reflect.TypeFor[VersionContext]().FieldByName("Version")
 			Expect(vexists).To(BeTrue())
 			Expect(string(vf.Tag)).To(Equal(`json:"version"`))
 
-			cf, cexists := reflect.TypeOf(&Version).Elem().FieldByName("Commit")
+			cf, cexists := reflect.TypeFor[VersionContext]().FieldByName("Commit")
 			Expect(cexists).To(BeTrue())
 			Expect(string(cf.Tag)).To(Equal(`json:"commit"`))
 		})
 
 		It("should only have three struct keys for tests to be valid", func() {
-			keys := reflect.TypeOf(Version).NumField()
+			keys := reflect.TypeFor[VersionContext]().NumField()
 			Expect(keys).To(Equal(3))
 		})
 	})

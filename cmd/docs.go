@@ -24,7 +24,7 @@ func init() {
 }
 
 func docsRun(cmd *cobra.Command, args []string) {
-	doctypes := map[string]interface{}{
+	doctypes := map[string]any{
 		"man":      doc.GenManTree,
 		"markdown": doc.GenMarkdownTree,
 		"rest":     doc.GenReSTTree,
