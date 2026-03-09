@@ -30,7 +30,7 @@ jobs:
       run: echo SHA_SHORT=$(git rev-parse --short HEAD) >> $GITHUB_ENV
 
     - name: Set up QEMU
-      uses: docker/setup-qemu-action@v3
+      uses: docker/setup-qemu-action@v4
         
     - name: Build Image
       id: build-image
