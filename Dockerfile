@@ -3,7 +3,7 @@ ARG release_tag=0.0.0
 ARG ARCH=amd64
 ARG OS=linux
 
-FROM docker.io/golang:1.25 AS builder
+FROM docker.io/golang:1.26 AS builder
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
@@ -15,7 +15,7 @@ WORKDIR /go/src/preflight-trigger
 RUN make build RELEASE_TAG=${release_tag}
 
 
-FROM registry.access.redhat.com/ubi9/ubi-micro:latest
+FROM registry.access.redhat.com/ubi10/ubi-micro:latest
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
