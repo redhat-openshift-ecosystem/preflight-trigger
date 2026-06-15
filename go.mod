@@ -6,14 +6,14 @@ require (
 	github.com/ProtonMail/gopenpgp/v2 v2.10.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-github/v56 v56.0.0
-	github.com/onsi/ginkgo/v2 v2.29.0
-	github.com/onsi/gomega v1.41.0
+	github.com/onsi/ginkgo/v2 v2.31.0
+	github.com/onsi/gomega v1.42.0
 	github.com/openshift/api v0.0.0-20260302174620-dcac36b908db
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
-	k8s.io/api v0.36.1
-	k8s.io/apimachinery v0.36.1
-	k8s.io/client-go v0.36.1
+	k8s.io/api v0.36.2
+	k8s.io/apimachinery v0.36.2
+	k8s.io/client-go v0.36.2
 	sigs.k8s.io/controller-runtime v0.24.1
 	sigs.k8s.io/prow v0.0.0-20260302231255-c5b800fc6348
 )
