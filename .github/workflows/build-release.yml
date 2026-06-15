@@ -10,9 +10,13 @@ on:
 env:
   IMAGE_NAME: preflight-trigger
 
+permissions: {}
+
 jobs:
   build-release:
     name: Build and push tag images
+    permissions:
+      contents: read
     strategy: 
       matrix:
         architecture: [amd64]
