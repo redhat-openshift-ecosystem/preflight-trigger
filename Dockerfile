@@ -3,7 +3,7 @@ ARG release_tag=0.0.0
 ARG ARCH=amd64
 ARG OS=linux
 
-FROM registry.access.redhat.com/hi/go:1.26-builder AS builder
+FROM docker.io/golang:1.26 AS builder
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
@@ -15,7 +15,7 @@ WORKDIR /go/src/preflight-trigger
 RUN make build RELEASE_TAG=${release_tag}
 
 
-FROM registry.access.redhat.com/hi/core-runtime:latest
+FROM registry.access.redhat.com/ubi10/ubi-micro:latest
 ARG quay_expiration
 ARG release_tag
 ARG ARCH
@@ -44,8 +44,5 @@ COPY --from=builder /go/src/preflight-trigger/preflight-trigger /usr/local/bin/p
 
 #copy license
 COPY LICENSE /licenses/LICENSE
-
-# Switching to root user, for backwards compatability
-USER 0
 
 CMD ["preflight-trigger"]
