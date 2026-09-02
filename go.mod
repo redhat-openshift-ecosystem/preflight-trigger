@@ -11,9 +11,9 @@ require (
 	github.com/openshift/api v0.0.0-20260710200753-d8a1748da7dc
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
-	k8s.io/api v0.36.3
-	k8s.io/apimachinery v0.36.3
-	k8s.io/client-go v0.36.3
+	k8s.io/api v0.36.4
+	k8s.io/apimachinery v0.36.4
+	k8s.io/client-go v0.36.4
 	sigs.k8s.io/controller-runtime v0.24.1
 	sigs.k8s.io/prow v0.0.0-20260709093033-bcf4297e528a
 )
@@ -169,15 +169,15 @@ require (
 	gocloud.dev v0.40.0 // indirect
 	golang.org/x/crypto v0.53.0 // indirect
 	golang.org/x/exp v0.0.0-20260410095643-746e56fc9e2f // indirect
-	golang.org/x/mod v0.36.0 // indirect
+	golang.org/x/mod v0.37.0 // indirect
 	golang.org/x/net v0.56.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
 	golang.org/x/sync v0.21.0 // indirect
 	golang.org/x/sys v0.46.0 // indirect
 	golang.org/x/term v0.44.0 // indirect
-	golang.org/x/text v0.38.0 // indirect
+	golang.org/x/text v0.39.0 // indirect
 	golang.org/x/time v0.14.0 // indirect
-	golang.org/x/tools v0.45.0 // indirect
+	golang.org/x/tools v0.47.0 // indirect
 	golang.org/x/xerrors v0.0.0-20240903120638-7835f813f4da // indirect
 	gomodules.xyz/jsonpatch/v2 v2.5.0 // indirect
 	google.golang.org/api v0.256.0 // indirect
