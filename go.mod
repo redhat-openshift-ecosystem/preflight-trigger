@@ -7,7 +7,7 @@ require (
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/onsi/ginkgo/v2 v2.32.1
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.43.0
 	github.com/openshift/api v0.0.0-20260710200753-d8a1748da7dc
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
