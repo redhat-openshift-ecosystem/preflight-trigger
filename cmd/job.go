@@ -115,7 +115,7 @@ func jobPreRun(cmd *cobra.Command, args []string) {
 func jobRun(cmd *cobra.Command, args []string) {
 	configagent, err := CommandFlags.ConfigAgent()
 	if err != nil {
-		log.Fatalf("%v", err)
+		log.Fatalf("Unable to load Prow configuration: %v", err)
 	}
 
 	config := configagent.Config()
@@ -145,7 +145,7 @@ func jobRun(cmd *cobra.Command, args []string) {
 	if CommandFlags.DryRun {
 		yamloutput, err := yaml.Marshal(jobmanifest)
 		if err != nil {
-			log.Printf("Failed marshalling yaml for --dry-run: %v", err)
+			log.Fatalf("Failed marshalling yaml for --dry-run: %v", err)
 		}
 		log.Printf("%s", yamloutput)
 		os.Exit(0)
@@ -185,7 +185,7 @@ func jobRun(cmd *cobra.Command, args []string) {
 		case event := <-eventchannel:
 			pj, ok = event.Object.(*pjapi.ProwJob)
 			if !ok {
-				log.Fatalf("Received unexpected object type from watch: object-type %v", event)
+				log.Fatalf("Received unexpected object type from watch: %T", event.Object)
 			}
 
 			if pj.Status.State == pjapi.FailureState || pj.Status.State == pjapi.ErrorState || pj.Status.State == pjapi.AbortedState {
