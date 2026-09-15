@@ -98,6 +98,7 @@ func downloadArtifacts(uri string) bool {
 	return true
 }
 
+// untarArtifacts extracts supported entries from a gzip-compressed tar archive.
 func untarArtifacts(tarball, target string) bool {
 	src := filepath.FromSlash(tarball)
 	archive, err := os.Open(src)
@@ -126,6 +127,27 @@ func untarArtifacts(tarball, target string) bool {
 		}
 	}(gzreader)
 
+	if target == "" {
+		target = "."
+	}
+	// Ensure the extraction root exists before opening it.
+	if err := os.MkdirAll(target, 0o755); err != nil {
+		log.Printf("Unable to create extraction target: %v", err)
+		return false
+	}
+
+	// Use rooted operations to keep extracted paths below the target directory.
+	extractionRoot, err := os.OpenRoot(target)
+	if err != nil {
+		log.Printf("Unable to open extraction target: %v", err)
+		return false
+	}
+	defer func(root *os.Root) {
+		if err := root.Close(); err != nil {
+			log.Fatalf("Unable to close extraction target: %v", err)
+		}
+	}(extractionRoot)
+
 	tarreader := tar.NewReader(gzreader)
 
 	for {
@@ -138,15 +160,24 @@ func untarArtifacts(tarball, target string) bool {
 			return false
 		}
 
+		// Validate the archive name before using it with the extraction root.
+		entryPath := filepath.FromSlash(header.Name)
+		if !filepath.IsLocal(entryPath) {
+			log.Printf("Archive entry %q escapes extraction target %q", header.Name, target)
+			return false
+		}
+
+		// Normalize tar directory entries for Go versions where Root.MkdirAll rejects trailing separators.
+		entryPath = filepath.Clean(entryPath)
 		switch header.Typeflag {
 		case tar.TypeDir:
-			err = os.MkdirAll(filepath.Join(target, header.Name), 0o755)
+			err = extractionRoot.MkdirAll(entryPath, 0o755)
 			if err != nil {
 				log.Printf("Unable to create directory: %v", err)
 				return false
 			}
 		case tar.TypeReg:
-			outFile, err := os.Create(filepath.Join(target, header.Name))
+			outFile, err := extractionRoot.Create(entryPath)
 			if err != nil {
 				log.Printf("Unable to create file: %v", err)
 				return false
