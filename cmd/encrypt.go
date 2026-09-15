@@ -36,12 +36,12 @@ func encryptPreRun(cmd *cobra.Command, args []string) {
 func encryptRun(cmd *cobra.Command, args []string) {
 	encryptionpublickey, err := os.ReadFile(CommandFlags.GPGEncryptionPublicKey)
 	if err != nil {
-		return
+		log.Fatalf("Unable to read encryption public key %q: %v", CommandFlags.GPGEncryptionPublicKey, err)
 	}
 
 	encryptionprivatekey, err := os.ReadFile(CommandFlags.GPGEncryptionPrivateKey)
 	if err != nil {
-		return
+		log.Fatalf("Unable to read encryption private key %q: %v", CommandFlags.GPGEncryptionPrivateKey, err)
 	}
 
 	var fcontent []byte
@@ -49,18 +49,18 @@ func encryptRun(cmd *cobra.Command, args []string) {
 	if CommandFlags.PfltDockerConfig == "" && CommandFlags.FileToEncrypt == "" {
 		fcontent, err = os.ReadFile(os.Stdin.Name())
 		if err != nil {
-			log.Printf("Error reading from stdin: %s", err)
+			log.Fatalf("Error reading from stdin: %v", err)
 		}
 	} else {
 		if CommandFlags.PfltDockerConfig != "" {
 			fcontent, err = os.ReadFile(CommandFlags.PfltDockerConfig)
 			if err != nil {
-				log.Printf("Error reading dockerconfigjson: %s", err)
+				log.Fatalf("Error reading dockerconfigjson %q: %v", CommandFlags.PfltDockerConfig, err)
 			}
 		} else {
 			fcontent, err = os.ReadFile(CommandFlags.FileToEncrypt)
 			if err != nil {
-				log.Printf("Error reading file: %s", err)
+				log.Fatalf("Error reading file %q: %v", CommandFlags.FileToEncrypt, err)
 			}
 		}
 	}
@@ -102,7 +102,7 @@ func encryptRun(cmd *cobra.Command, args []string) {
 	if CommandFlags.OutputPath == "" {
 		_, err = os.Stdout.Write([]byte(armor))
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Unable to write encrypted data to stdout: %v", err)
 		}
 	} else {
 		err = os.WriteFile(CommandFlags.OutputPath, []byte(armor), 0o644)

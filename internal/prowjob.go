@@ -77,14 +77,12 @@ func getJobArtifactsURL(prowJob *pjapi.ProwJob, config *prowconfig.Config) strin
 func writeResultOutput(pjr jobResult, outputPath string) error {
 	pjrjson, err := pjr.toJSON()
 	if err != nil {
-		log.Fatal("Unable to marshal prowjob result to JSON")
-		return err
+		return fmt.Errorf("unable to marshal prowjob result to JSON: %w", err)
 	}
 
 	err = os.WriteFile(outputPath, pjrjson, 0o755)
 	if err != nil {
-		log.Fatalf("Error writing result to file: %v", err)
-		return err
+		return fmt.Errorf("error writing result to %q: %w", outputPath, err)
 	}
 
 	return nil
@@ -125,9 +123,9 @@ func ProwJobSuccess(pj *pjapi.ProwJob, config *prowconfig.Config, output string)
 	err := writeResultOutput(pjr, output)
 	fmt.Printf("%+v\n", pjr)
 	if err != nil {
-		log.Fatal("Unable to write prowjob result to file")
+		log.Fatalf("Unable to write ProwJob result to file: %v", err)
 	}
-	log.Println("job succeeded")
+	log.Printf("ProwJob %q succeeded", pj.Name)
 	os.Exit(0)
 }
 
@@ -141,9 +139,9 @@ func ProwJobFailure(pj *pjapi.ProwJob, config *prowconfig.Config, output string)
 	fmt.Printf("%+v\n", pjr)
 	err := writeResultOutput(pjr, output)
 	if err != nil {
-		log.Fatal("Unable to write prowjob result to file")
+		log.Fatalf("Unable to write ProwJob result to file: %v", err)
 	}
-	log.Fatal("job failed")
+	log.Fatalf("ProwJob %q failed with state %v", pj.Name, pj.Status.State)
 }
 
 func ProwJobWatcher(namespace string, pjcs *pjclient.Clientset, selector string) (watch.Interface, error) {
@@ -156,26 +154,14 @@ func ProwJobWatcher(namespace string, pjcs *pjclient.Clientset, selector string)
 
 			watcher, err = pjcs.ProwV1().ProwJobs(namespace).Watch(ctx, metav1.ListOptions{FieldSelector: selector})
 			if err != nil {
-				log.Fatalf("%v", err)
+				return false, fmt.Errorf("unable to watch ProwJob in namespace %q with selector %q: %w", namespace, selector, err)
 			}
 
 			return true, nil
 		})
 	if err != nil {
-		log.Fatalf("%v", err)
+		return nil, fmt.Errorf("unable to start ProwJob watcher: %w", err)
 	}
 
 	return watcher, nil
 }
-
-// appendMultiStageParams passes image dependency overrides to ci-operator
-/*func appendMultiStageDepOverrides(podSpec *v1.PodSpec, overrides map[string]string) {
-	keys := make([]string, 0, len(overrides))
-	for key := range overrides {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-	for _, key := range keys {
-		podSpec.Containers[0].Args = append(podSpec.Containers[0].Args, fmt.Sprintf("--dependency-override-param=%s=\"%s\"", key, overrides[key]))
-	}
-}*/

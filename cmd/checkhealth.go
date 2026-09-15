@@ -90,14 +90,19 @@ func checkreadyz() {
 	var readyz []byte
 
 	for i := 0; i < timeout; i++ {
-		// TODO: do we want to catch this error or ignore it? Ignoring for now
-		readyz, _ = kclient.CoreV1().RESTClient().Get().AbsPath("/readyz").DoRaw(context.TODO())
+		var err error
+		readyz, err = kclient.CoreV1().RESTClient().Get().AbsPath("/readyz").DoRaw(context.TODO())
+		if err != nil {
+			log.Printf("/readyz request failed: %v; will check again in 1 minute", err)
+			time.Sleep(time.Minute)
+			continue
+		}
 
 		if string(readyz) == "ok" {
 			log.Println("/readyz is ok")
 			return
 		} else {
-			log.Printf("/readyz check failed, will check again in 1 minute")
+			log.Printf("/readyz check failed with response %q; will check again in 1 minute", string(readyz))
 			time.Sleep(time.Minute)
 		}
 	}

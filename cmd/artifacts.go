@@ -80,12 +80,12 @@ func downloadArtifacts(uri string) bool {
 	defer func(resp *http.Response) {
 		err := resp.Body.Close()
 		if err != nil {
-			log.Fatalf("Unable to close preflight.tar.gz.asc file: %v", err)
+			log.Fatalf("Unable to close HTTP response body: %v", err)
 		}
 	}(resp)
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Response returned status code other than 200: %v", err)
+		log.Printf("Response returned status code other than 200: %v", resp.StatusCode)
 		return false
 	}
 
@@ -161,7 +161,8 @@ func untarArtifacts(tarball, target string) bool {
 				log.Fatalf("Unable to close file: %v", err)
 			}
 		default:
-			log.Printf("Unable to untar type: %v in file %v", header.Typeflag, header.Name)
+			log.Printf("Unsupported tar entry type %v in file %s", header.Typeflag, header.Name)
+			return false
 		}
 	}
 	return true

@@ -33,12 +33,12 @@ func decryptPreRun(cmd *cobra.Command, args []string) {
 func decryptRun(cmd *cobra.Command, args []string) {
 	decryptionprivatekey, err := os.ReadFile(CommandFlags.GPGDecryptionPrivateKey)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Unable to read decryption private key %q: %v", CommandFlags.GPGDecryptionPrivateKey, err)
 	}
 
 	decryptionpublickey, err := os.ReadFile(CommandFlags.GPGDecryptionPublicKey)
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Unable to read decryption public key %q: %v", CommandFlags.GPGDecryptionPublicKey, err)
 	}
 
 	var fcontent []byte
@@ -46,7 +46,7 @@ func decryptRun(cmd *cobra.Command, args []string) {
 	if CommandFlags.PfltDockerConfig == "" && CommandFlags.FileToDecrypt == "" {
 		fcontent, err = os.ReadFile(os.Stdin.Name())
 		if err != nil {
-			log.Printf("Error reading from stdin: %s", err)
+			log.Fatalf("Error reading from stdin: %v", err)
 		}
 	} else {
 		if CommandFlags.PfltDockerConfig != "" {
@@ -54,7 +54,7 @@ func decryptRun(cmd *cobra.Command, args []string) {
 		} else {
 			fcontent, err = os.ReadFile(CommandFlags.FileToDecrypt)
 			if err != nil {
-				log.Printf("Error reading file: %s", err)
+				log.Fatalf("Error reading file %q: %v", CommandFlags.FileToDecrypt, err)
 			}
 		}
 	}
@@ -95,7 +95,7 @@ func decryptRun(cmd *cobra.Command, args []string) {
 	if CommandFlags.OutputPath == "" {
 		_, err = os.Stdout.Write(unarmor.Data)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatalf("Unable to write decrypted data to stdout: %v", err)
 		}
 	} else {
 		err = os.WriteFile(CommandFlags.OutputPath, unarmor.Data, 0o644)
