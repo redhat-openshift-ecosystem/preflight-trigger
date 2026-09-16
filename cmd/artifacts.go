@@ -193,7 +193,7 @@ func artifactsRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if !ok {
-		artifactsBaseURL := "https://gcsweb-ci.apps.ci.l2s4.p1.openshiftapps.com/gcs/origin-ci-test/logs/"
+		artifactsBaseURL := "https://gcs.ci.openshift.org/gcs/test-platform-results-public/logs/"
 		artifactsJobID := getJobID()
 		artifactsTarballURI := artifactsBaseURL + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
 			"-ocp-" + CommandFlags.OcpVersion + "-preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/" + artifactsJobID +
