@@ -32,6 +32,7 @@ local filesystem. This command also supports untarring the artifacts.`,
 func init() {
 	rootCmd.AddCommand(artifactsCmd)
 	artifactsCmd.Flags().BoolP("untar", "", false, "Untar the artifacts file")
+	artifactsCmd.Flags().StringVarP(&CommandFlags.ArtifactsBaseURL, "artifacts-base-url", "", artifactsBaseURL, "Base URL to use when downloading artifacts")
 	artifactsCmd.Flags().StringVarP(&CommandFlags.CIEnvironment, "environment", "", ciEnvironment, "Set the environment to use; can be one of [common, preprod, prod]")
 }
 
@@ -225,9 +226,8 @@ func artifactsRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if !ok {
-		artifactsBaseURL := "https://gcs.ci.openshift.org/gcs/test-platform-results-public/logs/"
 		artifactsJobID := getJobID()
-		artifactsTarballURI := artifactsBaseURL + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
+		artifactsTarballURI := CommandFlags.ArtifactsBaseURL + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
 			"-ocp-" + CommandFlags.OcpVersion + "-preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/" + artifactsJobID +
 			"/artifacts/preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/operator-pipelines-preflight-" + CommandFlags.CIJobs + "-encrypt/artifacts/preflight.tar.gz.asc"
 
