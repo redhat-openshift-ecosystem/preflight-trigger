@@ -7,7 +7,6 @@ import (
 	"context"
 	"log"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/redhat-openshift-ecosystem/preflight-trigger/internal"
@@ -16,6 +15,7 @@ import (
 	"github.com/spf13/cobra"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
+	"k8s.io/apimachinery/pkg/util/version"
 	pjapi "sigs.k8s.io/prow/pkg/apis/prowjobs/v1"
 	pjclient "sigs.k8s.io/prow/pkg/client/clientset/versioned"
 )
@@ -54,8 +54,10 @@ func validateJobFlags() {
 		}
 	}
 
-	if !strings.HasPrefix(CommandFlags.OcpVersion, "4") {
-		log.Fatalln("Only OCP 4.x is supported")
+	// Accept current and future OCP major versions starting with 4.x
+	ocpVersion, err := version.ParseMajorMinor(CommandFlags.OcpVersion)
+	if err != nil || ocpVersion.Major() < 4 || CommandFlags.OcpVersion != ocpVersion.String() {
+		log.Fatalf("Unsupported OCP version %q; OCP 4.x or later is required", CommandFlags.OcpVersion)
 	}
 }
 
