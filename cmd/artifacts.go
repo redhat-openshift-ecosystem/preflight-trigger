@@ -32,7 +32,7 @@ local filesystem. This command also supports untarring the artifacts.`,
 func init() {
 	rootCmd.AddCommand(artifactsCmd)
 	artifactsCmd.Flags().BoolP("untar", "", false, "Untar the artifacts file")
-	artifactsCmd.Flags().StringVarP(&CommandFlags.CIEnvironment, "environment", "", "common", "Set the environment to use; can be one of [common, preprod, prod]")
+	artifactsCmd.Flags().StringVarP(&CommandFlags.CIEnvironment, "environment", "", ciEnvironment, "Set the environment to use; can be one of [common, preprod, prod]")
 }
 
 func getJobID() string {
@@ -42,14 +42,14 @@ func getJobID() string {
 		URL          string             `json:"prowjob_url"`
 	}
 
-	f, err := os.ReadFile("prowjob-base-url")
+	f, err := os.ReadFile(jobOutputPath)
 	if err != nil {
-		log.Fatalf("Unable to read prowjob-base-url file: %v", err)
+		log.Fatalf("Unable to read %s file: %v", jobOutputPath, err)
 	}
 
 	err = json.Unmarshal(f, &results)
 	if err != nil {
-		log.Fatalf("Unable to unmarshal prowjob-base-url file: %v", err)
+		log.Fatalf("Unable to unmarshal %s file: %v", jobOutputPath, err)
 	}
 
 	return func(sl []string) string {
@@ -128,7 +128,7 @@ func untarArtifacts(tarball, target string) bool {
 	}(gzreader)
 
 	if target == "" {
-		target = "."
+		target = artifactsTarget
 	}
 	// Ensure the extraction root exists before opening it.
 	if err := os.MkdirAll(target, 0o755); err != nil {

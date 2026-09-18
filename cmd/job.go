@@ -31,7 +31,7 @@ var jobCmd = &cobra.Command{
 
 func init() {
 	createCmd.AddCommand(jobCmd)
-	jobCmd.Flags().StringVarP(&CommandFlags.CIEnvironment, "environment", "", "common", "Set the environment to use; can be one of [common, preprod, prod]")
+	jobCmd.Flags().StringVarP(&CommandFlags.CIEnvironment, "environment", "", ciEnvironment, "Set the environment to use; can be one of [common, preprod, prod]")
 }
 
 func validateJobFlags() {
@@ -106,7 +106,7 @@ func jobPreRun(cmd *cobra.Command, args []string) {
 	CommandFlags.JobConfigPath = "redhat-openshift-ecosystem-" + CommandFlags.CIRepo + "-ocp-" + CommandFlags.OcpVersion + "-periodics.yaml"
 	CommandFlags.ConfigPath = "_config.yaml"
 	if CommandFlags.OutputPath == "" {
-		CommandFlags.OutputPath = "prowjob-base-url"
+		CommandFlags.OutputPath = jobOutputPath
 	}
 
 	CommandFlags.ClusterType = CommandFlags.JobSuffix
