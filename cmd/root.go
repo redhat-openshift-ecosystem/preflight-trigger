@@ -15,8 +15,9 @@ import (
 )
 
 type FlagsData struct {
-	AssetType   string `json:"asset-type"`
-	ClusterType string `json:"cluster-type"`
+	AssetType        string `json:"asset-type"`
+	ArtifactsBaseURL string `json:"artifacts-base-url" param:"ARTIFACTS_BASE_URL"`
+	ClusterType      string `json:"cluster-type"`
 	// RootFlags inherits configflagutil.ConfigOptions from Prow and provides the following flags:
 	// ConfigPath (string), JobConfigPath (string), ConfigPathFlagName (string), JobConfigPathFlagName (string),
 	// SupplementalProwConfigDirs (flagutil.Strings), and SupplementalProwConfigsFileNameSuffix (string)
