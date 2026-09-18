@@ -32,7 +32,8 @@ local filesystem. This command also supports untarring the artifacts.`,
 func init() {
 	rootCmd.AddCommand(artifactsCmd)
 	artifactsCmd.Flags().BoolP("untar", "", false, "Untar the artifacts file")
-	artifactsCmd.Flags().StringVarP(&CommandFlags.CIEnvironment, "environment", "", "common", "Set the environment to use; can be one of [common, preprod, prod]")
+	artifactsCmd.Flags().StringVarP(&CommandFlags.ArtifactsBaseURL, "artifacts-base-url", "", artifactsBaseURL, "Base URL to use when downloading artifacts")
+	artifactsCmd.Flags().StringVarP(&CommandFlags.CIEnvironment, "environment", "", ciEnvironment, "Set the environment to use; can be one of [common, preprod, prod]")
 }
 
 func getJobID() string {
@@ -42,14 +43,14 @@ func getJobID() string {
 		URL          string             `json:"prowjob_url"`
 	}
 
-	f, err := os.ReadFile("prowjob-base-url")
+	f, err := os.ReadFile(jobOutputPath)
 	if err != nil {
-		log.Fatalf("Unable to read prowjob-base-url file: %v", err)
+		log.Fatalf("Unable to read %s file: %v", jobOutputPath, err)
 	}
 
 	err = json.Unmarshal(f, &results)
 	if err != nil {
-		log.Fatalf("Unable to unmarshal prowjob-base-url file: %v", err)
+		log.Fatalf("Unable to unmarshal %s file: %v", jobOutputPath, err)
 	}
 
 	return func(sl []string) string {
@@ -128,7 +129,7 @@ func untarArtifacts(tarball, target string) bool {
 	}(gzreader)
 
 	if target == "" {
-		target = "."
+		target = artifactsTarget
 	}
 	// Ensure the extraction root exists before opening it.
 	if err := os.MkdirAll(target, 0o755); err != nil {
@@ -225,9 +226,8 @@ func artifactsRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if !ok {
-		artifactsBaseURL := "https://gcs.ci.openshift.org/gcs/test-platform-results-public/logs/"
 		artifactsJobID := getJobID()
-		artifactsTarballURI := artifactsBaseURL + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
+		artifactsTarballURI := CommandFlags.ArtifactsBaseURL + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
 			"-ocp-" + CommandFlags.OcpVersion + "-preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/" + artifactsJobID +
 			"/artifacts/preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/operator-pipelines-preflight-" + CommandFlags.CIJobs + "-encrypt/artifacts/preflight.tar.gz.asc"
 

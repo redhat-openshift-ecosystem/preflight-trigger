@@ -15,8 +15,9 @@ import (
 )
 
 type FlagsData struct {
-	AssetType   string `json:"asset-type"`
-	ClusterType string `json:"cluster-type"`
+	AssetType        string `json:"asset-type"`
+	ArtifactsBaseURL string `json:"artifacts-base-url" param:"ARTIFACTS_BASE_URL"`
+	ClusterType      string `json:"cluster-type"`
 	// RootFlags inherits configflagutil.ConfigOptions from Prow and provides the following flags:
 	// ConfigPath (string), JobConfigPath (string), ConfigPathFlagName (string), JobConfigPathFlagName (string),
 	// SupplementalProwConfigDirs (flagutil.Strings), and SupplementalProwConfigsFileNameSuffix (string)
@@ -89,11 +90,11 @@ func init() {
 	flags.StringVarP(&CommandFlags.JobSuffix, "job-suffix", "", "", "Suffix to append to the job name")
 	flags.StringVarP(&CommandFlags.OcpVersion, "ocp-version", "", "", "Version of OCP to use")
 	flags.StringVarP(&CommandFlags.OutputPath, "output-path", "", "", "Path to output the job to")
-	flags.StringVarP(&CommandFlags.PfltArtifacts, "pflt-artifacts", "", "artifacts", "Path to artifacts to use for preflight")
+	flags.StringVarP(&CommandFlags.PfltArtifacts, "pflt-artifacts", "", artifactsPath, "Path to artifacts to use for preflight")
 	flags.StringVarP(&CommandFlags.PfltDockerConfig, "pflt-docker-config", "", "", "Docker config to use for preflight")
 	flags.StringVarP(&CommandFlags.PfltIndexImage, "pflt-index-image", "", "", "Index image to use for preflight")
 	flags.StringVarP(&CommandFlags.PfltLogFile, "pflt-log-file", "", "", "Path to log file to use for preflight")
-	flags.StringVarP(&CommandFlags.PfltLogLevel, "pflt-log-level", "", "trace", "Level of logging to use for preflight")
+	flags.StringVarP(&CommandFlags.PfltLogLevel, "pflt-log-level", "", pfltLogLevel, "Level of logging to use for preflight")
 	flags.StringVarP(&CommandFlags.PfltNamespace, "pflt-namespace", "", "", "Namespace to use for preflight")
 	flags.StringVarP(&CommandFlags.PfltServiceAccount, "pflt-service-account", "", "", "Service account to use for preflight")
 	flags.StringVarP(&CommandFlags.ReleaseImageRef, "release-image-ref", "", "", "Release image reference to use for preflight")

@@ -20,7 +20,7 @@ var docsCmd = &cobra.Command{
 
 func init() {
 	createCmd.AddCommand(docsCmd)
-	docsCmd.Flags().StringVarP(&CommandFlags.DocsType, "docs-type", "", "markdown", "Type of documentation to generate. Supported types: man, markdown, rest, yaml")
+	docsCmd.Flags().StringVarP(&CommandFlags.DocsType, "docs-type", "", docsType, "Type of documentation to generate. Supported types: man, markdown, rest, yaml")
 }
 
 func docsRun(cmd *cobra.Command, args []string) {
