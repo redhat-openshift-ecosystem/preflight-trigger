@@ -196,6 +196,47 @@ func TestUntarArtifactsRejectsSymlinkEscape(t *testing.T) {
 	}
 }
 
+func TestBuildArtifactsURL(t *testing.T) {
+	const artifactPath = "periodic-ci-redhat-openshift-ecosystem-preflight-ocp-4.18-preflight-common-claim/job-123/artifacts/preflight-common-claim/operator-pipelines-preflight-common-encrypt/artifacts/preflight.tar.gz.asc"
+
+	tests := []struct {
+		name    string
+		baseURL string
+		want    string
+	}{
+		{
+			name:    "default base URL",
+			baseURL: artifactsBaseURL,
+			want:    artifactsBaseURL + artifactPath,
+		},
+		{
+			name:    "custom base URL",
+			baseURL: "https://example.test/results",
+			want:    "https://example.test/results/" + artifactPath,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			flags := &FlagsData{
+				ArtifactsBaseURL: test.baseURL,
+				CIRepo:           "preflight",
+				OcpVersion:       "4.18",
+				CIJobs:           "common",
+				JobSuffix:        "claim",
+			}
+
+			got, err := buildArtifactsURL(flags, "job-123")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("buildArtifactsURL() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
 // writeTarGz creates a gzip-compressed tar archive containing one entry.
 func writeTarGz(t *testing.T, path string, header *tar.Header) {
 	t.Helper()

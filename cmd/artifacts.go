@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -219,6 +220,19 @@ func artifactsPreRunE(cmd *cobra.Command, args []string) error {
 	return nil
 }
 
+func buildArtifactsURL(flags *FlagsData, jobID string) (string, error) {
+	return url.JoinPath(
+		flags.ArtifactsBaseURL,
+		"periodic-ci-redhat-openshift-ecosystem-"+flags.CIRepo+"-ocp-"+flags.OcpVersion+"-preflight-"+flags.CIJobs+"-"+flags.JobSuffix,
+		jobID,
+		"artifacts",
+		"preflight-"+flags.CIJobs+"-"+flags.JobSuffix,
+		"operator-pipelines-preflight-"+flags.CIJobs+"-encrypt",
+		"artifacts",
+		"preflight.tar.gz.asc",
+	)
+}
+
 func artifactsRunE(cmd *cobra.Command, args []string) error {
 	ok, err := cmd.Flags().GetBool("untar")
 	if err != nil {
@@ -226,10 +240,10 @@ func artifactsRunE(cmd *cobra.Command, args []string) error {
 	}
 
 	if !ok {
-		artifactsJobID := getJobID()
-		artifactsTarballURI := CommandFlags.ArtifactsBaseURL + "periodic-ci-redhat-openshift-ecosystem-" + CommandFlags.CIRepo +
-			"-ocp-" + CommandFlags.OcpVersion + "-preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/" + artifactsJobID +
-			"/artifacts/preflight-" + CommandFlags.CIJobs + "-" + CommandFlags.JobSuffix + "/operator-pipelines-preflight-" + CommandFlags.CIJobs + "-encrypt/artifacts/preflight.tar.gz.asc"
+		artifactsTarballURI, err := buildArtifactsURL(&CommandFlags, getJobID())
+		if err != nil {
+			log.Fatalf("Unable to construct artifacts URL: %v", err)
+		}
 
 		dok := downloadArtifacts(artifactsTarballURI)
 		if !dok {
