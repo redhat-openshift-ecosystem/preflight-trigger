@@ -3,7 +3,7 @@ module github.com/redhat-openshift-ecosystem/preflight-trigger
 go 1.26.5
 
 require (
-	github.com/ProtonMail/gopenpgp/v2 v2.10.0
+	github.com/ProtonMail/gopenpgp/v2 v2.11.0
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/onsi/ginkgo/v2 v2.33.0
@@ -11,9 +11,9 @@ require (
 	github.com/openshift/api v0.0.0-20260911190130-c1fd4253d254
 	github.com/spf13/afero v1.15.0
 	github.com/spf13/cobra v1.10.2
-	k8s.io/api v0.37.0
-	k8s.io/apimachinery v0.37.0
-	k8s.io/client-go v0.37.0
+	k8s.io/api v0.37.1
+	k8s.io/apimachinery v0.37.1
+	k8s.io/client-go v0.37.1
 	sigs.k8s.io/controller-runtime v0.25.1
 	sigs.k8s.io/prow v0.0.0-20260910122034-e30e351eb631
 )
@@ -32,7 +32,7 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/internal/resourcemapping v0.60.0 // indirect
 	github.com/GoogleCloudPlatform/testgrid v0.0.176 // indirect
 	github.com/Masterminds/semver/v3 v3.4.0 // indirect
-	github.com/ProtonMail/go-crypto v1.4.1 // indirect
+	github.com/ProtonMail/go-crypto v1.5.2 // indirect
 	github.com/ProtonMail/go-mime v0.0.0-20230322103455-7d82a3887f2f // indirect
 	github.com/andygrunwald/go-jira v1.17.0 // indirect
 	github.com/antlr4-go/antlr/v4 v4.13.1 // indirect
