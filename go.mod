@@ -3,7 +3,7 @@ module github.com/redhat-openshift-ecosystem/preflight-trigger
 go 1.26.5
 
 require (
-	github.com/ProtonMail/gopenpgp/v2 v2.11.0
+	github.com/ProtonMail/gopenpgp/v2 v2.11.1
 	github.com/ghodss/yaml v1.0.0
 	github.com/google/go-github/v56 v56.0.0
 	github.com/onsi/ginkgo/v2 v2.33.0
@@ -14,7 +14,7 @@ require (
 	k8s.io/api v0.37.1
 	k8s.io/apimachinery v0.37.1
 	k8s.io/client-go v0.37.1
-	sigs.k8s.io/controller-runtime v0.25.1
+	sigs.k8s.io/controller-runtime v0.25.2
 	sigs.k8s.io/prow v0.0.0-20260910122034-e30e351eb631
 )
 
