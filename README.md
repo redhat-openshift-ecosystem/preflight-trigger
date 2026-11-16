@@ -2,6 +2,8 @@
 
 Create on-demand preflight jobs in openshift-ci system
 
+See [GPG Key Management and Rotation](docs/gpg-key-management.md) for how encryption keys are generated, stored in Google Secret Manager and OpenShift, and rotated.
+
 ### Options
 
 ```
