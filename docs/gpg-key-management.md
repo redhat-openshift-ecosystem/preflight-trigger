@@ -1,34 +1,188 @@
 # GPG Key Management and Rotation
 
-This document describes how GPG keys are used in `preflight-trigger`, how to generate a new key pair, where keys are stored, and how to rotate them.
+This document describes how `preflight-trigger` uses OpenPGP keys to exchange data between openshift-ci and the cluster that runs the hosted certification pipeline, where each key is stored, how to generate key pairs, and how to rotate them.
 
 ## Overview
 
-`preflight-trigger` uses OpenPGP to encrypt artifacts (such as `dockerconfigjson`) on the submitter side and decrypt them in-cluster.
+Two systems exchange data through `preflight-trigger`:
 
-* Encryption: `preflight-trigger encrypt` encrypts with the recipient public key and signs with the sender private key (`ProtonMail/gopenpgp` `KeyRing.Encrypt`).
-* Decryption: `preflight-trigger decrypt` decrypts with the recipient private key and verifies the signature with the sender public key (`KeyRing.Decrypt`).
+* **openshift-ci**: Prow and the `ci-operator` jobs it runs. The steps that call `preflight-trigger` are defined in [`openshift/release`](https://github.com/openshift/release/tree/main/ci-operator/step-registry/operator-pipelines) under `ci-operator/step-registry/operator-pipelines/preflight-prod` and `preflight-preprod`.
+* **Hosted pipeline**: the Tekton task `preflight-trigger`, which runs in the OpenShift cluster that hosts the certification pipelines. The task is defined in [`redhat-openshift-ecosystem/operator-pipelines`](https://github.com/redhat-openshift-ecosystem/operator-pipelines/blob/main/ansible/roles/operator-pipeline/templates/openshift/tasks/preflight-trigger.yml).
 
-In the deployed pipeline:
+Data moves in both directions. The hosted pipeline sends registry credentials to openshift-ci, and openshift-ci sends preflight results back. Both transports are readable by parties outside the two systems (see [Channels](#channels)), so every message is encrypted to the receiver's public key and signed with the sender's private key.
 
-* The private key for encryption is stored in Google Secret Manager and is pulled at encrypt time.
-* The public key for decryption is stored in the OpenShift cluster that runs the Prow job and is used to decrypt and verify artifacts.
+* `preflight-trigger encrypt` encrypts with `--gpg-encryption-public-key` and signs with `--gpg-encryption-private-key` (`KeyRing.Encrypt` in `ProtonMail/gopenpgp`).
+* `preflight-trigger decrypt` decrypts with `--gpg-decryption-private-key` and verifies the signature with `--gpg-decryption-public-key` (`KeyRing.Decrypt`). Decryption fails when the signature does not verify.
 
-Manage these secrets via the OpenShift CI Secret Manager CLI (`hack/secret-manager.sh` in `openshift/release`, aliased `sm` in this doc). It is the primary interface for CI secrets and is backed by Google Secret Manager. See [Using the Secret Manager CLI](https://docs.ci.openshift.org/architecture/cli-secret-manager/) for full documentation.
-Only CI infrastructure can read secret values; Rover group members can create/update/delete but cannot read back values.
+Two key pairs exist. Each system holds its own private key and the other system's public key.
 
-> Code references: `cmd/encrypt.go:36-92`, `cmd/decrypt.go:33-92`, `cmd/root.go:34-38` for flag definitions. Flags accept file paths to armored keys, not inline data.
+| Key pair | OpenPGP real name | Private key stored in | Public key stored in |
+|----------|-------------------|-----------------------|----------------------|
+| openshift-ci | `Preflight Trigger` | Google Secret Manager, collection `operator-pipelines`, field `operator-pipelines-gpg/private` | OpenShift Secret `preflight-decryption-key`, key `public` |
+| Hosted pipeline | `Operator Pipelines` | OpenShift Secret `preflight-decryption-key`, key `private` | Google Secret Manager, collection `operator-pipelines`, field `operator-pipelines-gpg/public` |
+
+The real names are a convention stated in the step scripts in `openshift/release`. `preflight-trigger` does not read the real name.
+
+> Code references: [`cmd/encrypt.go`](../cmd/encrypt.go) lines 36-113, [`cmd/decrypt.go`](../cmd/decrypt.go) lines 33-106, [`cmd/root.go`](../cmd/root.go) lines 84-87 for the key flags, [`cmd/job.go`](../cmd/job.go) for ProwJob creation, [`cmd/artifacts.go`](../cmd/artifacts.go) for the result download. The key flags accept file paths to armored keys.
+
+## Communication Between openshift-ci and the Hosted Pipeline
+
+### Participants
+
+| Participant | Role | Defined in |
+|-------------|------|------------|
+| Hosted pipeline task | Tekton task `preflight-trigger`. Sends the request, waits for the job, fetches and decrypts the response. | `operator-pipelines`: `ansible/roles/operator-pipeline/templates/openshift/tasks/preflight-trigger.yml` |
+| Prow control plane | Kubernetes API that stores ProwJob objects and starts the job. | `openshift/release`: `core-services/prow/02_config/_config.yaml` |
+| openshift-ci job | `ci-operator` workflow `operator-pipelines-preflight-<env>-claim` (`-aws` for OCP 4.6 and 4.7). Its test steps run in this order: `decrypt`, `check`, `encrypt`. | `openshift/release`: `ci-operator/step-registry/operator-pipelines/preflight-<env>/` |
+| Artifact bucket | Stores the job artifacts. Served under `https://gcs.ci.openshift.org/gcs/test-platform-results-public/logs/`, the default of `--artifacts-base-url`. | [`cmd/defaults.go`](../cmd/defaults.go) |
+
+`<env>` is `prod` or `preprod`. Pass it with `--environment`. The CLI default is `common`, and `openshift/release` defines step-registry directories for `preflight-prod` and `preflight-preprod` only.
+
+### Channels
+
+| Channel | Used for | Authentication | Who else can read it |
+|---------|----------|----------------|----------------------|
+| GitHub contents API | `create job` reads the Prow configuration and the periodic job definition from `openshift/release`. | Optional `GITHUB_AUTH_TOKEN` | Public data |
+| Prow Kubernetes API | `create job` creates the ProwJob and watches its state. Job parameters travel as `--multi-stage-param` arguments in the ProwJob pod spec. | Kubeconfig named by `KUBECONFIG`; the task mounts it from Secret `prow-kubeconfig`, key `kubeconfig` | Any user who can read ProwJob objects. Prow also stores the spec as `prowjob.json` with the job artifacts. |
+| Artifact URL | `artifacts` downloads `preflight.tar.gz.asc`. | None (`http.Get`) | Anyone who has the URL |
+
+The hosted pipeline opens every connection. openshift-ci never connects to the hosted pipeline cluster.
+
+### Request: hosted pipeline to openshift-ci
+
+The request carries registry credentials (`dockerconfigjson`) for private images under test. The task sends it only when `project_dockerconfigjson` exists in its `credentials` workspace.
+
+1. Task step `sanitize-docker-config-json` reduces the file to its `auths` section.
+2. Task step `encrypt-and-encode-docker-config-json` encrypts the file to the openshift-ci public key, signs it with the hosted pipeline private key, and base64-encodes the armored result:
+
+   ```bash
+   preflight-trigger encrypt \
+     --gpg-encryption-private-key /etc/gpg-key/private \
+     --gpg-encryption-public-key /etc/gpg-key/public \
+     --file project_dockerconfigjson \
+     --output-path project_dockerconfigjson.gpg
+
+   preflight-trigger encode \
+     --file project_dockerconfigjson.gpg \
+     --output-path project_dockerconfigjson.gpg.b64
+   ```
+
+3. Task step `create-openshift-ci-prowjob` exports the encoded text as `PFLT_DOCKERCONFIG` and runs `preflight-trigger create job`. The command:
+   * reads `_config.yaml` and the periodic `periodic-ci-redhat-openshift-ecosystem-certified-operators-<env>-ocp-<version>-preflight-<env>-claim` from `openshift/release`;
+   * builds a ProwJob from that periodic and appends `--multi-stage-param=PFLT_DOCKERCONFIG=<value>` together with the other `PFLT_*`, `TEST_ASSET`, and `ASSET_TYPE` parameters;
+   * creates the ProwJob and watches it until it succeeds, fails, or 90 minutes pass (the Tekton step itself times out after 1h15m);
+   * writes the job state, artifacts URL, and job URL as JSON to `prowjob-base-url`.
+4. Workflow step `operator-pipelines-preflight-<env>-decrypt` decodes the parameter, decrypts it with the openshift-ci private key, and verifies the signature with the hosted pipeline public key:
+
+   ```bash
+   preflight-trigger decode --value ${PFLT_DOCKERCONFIG} | preflight-trigger decrypt \
+     --gpg-decryption-private-key /var/run/operator-pipelines-gpg/private \
+     --gpg-decryption-public-key /var/run/operator-pipelines-gpg/public \
+     --output-path ${SHARED_DIR}/decrypted_config.json
+   ```
+
+5. Workflow step `operator-pipelines-preflight-<env>-check` sets `PFLT_DOCKERCONFIG` to `${SHARED_DIR}/decrypted_config.json` when that file exists and runs preflight.
+
+### Response: openshift-ci to hosted pipeline
+
+The response carries the preflight results and logs.
+
+1. The `check` step writes `${SHARED_DIR}/preflight.tar.gz`. The archive contains the preflight artifacts directory, `preflight.log`, and the captured stdout and stderr.
+2. Workflow step `operator-pipelines-preflight-<env>-encrypt` encrypts the archive to the hosted pipeline public key, signs it with the openshift-ci private key, and moves the result to `${ARTIFACT_DIR}`, which openshift-ci uploads to the artifact bucket:
+
+   ```bash
+   preflight-trigger encrypt \
+     --gpg-encryption-private-key /var/run/operator-pipelines-gpg/private \
+     --gpg-encryption-public-key /var/run/operator-pipelines-gpg/public \
+     --file ${SHARED_DIR}/preflight.tar.gz \
+     --output-path ${SHARED_DIR}/preflight.tar.gz.asc
+   ```
+
+3. Task step `get-prowjob-artifacts-and-decrypt` runs `preflight-trigger artifacts`. The command takes the job ID from the last path segment of `prowjob_artifacts_url` in `prowjob-base-url` and downloads:
+
+   ```
+   <artifacts-base-url>/<job-name>/<job-id>/artifacts/preflight-<env>-claim/operator-pipelines-preflight-<env>-encrypt/artifacts/preflight.tar.gz.asc
+   ```
+
+4. The same task step decrypts the archive with the hosted pipeline private key, verifies the signature with the openshift-ci public key, and extracts it:
+
+   ```bash
+   preflight-trigger decrypt \
+     --gpg-decryption-private-key /etc/gpg-key/private \
+     --gpg-decryption-public-key /etc/gpg-key/public \
+     --file preflight.tar.gz.asc \
+     --output-path preflight.tar.gz
+
+   preflight-trigger artifacts --untar
+   ```
+
+### Key Use per Direction
+
+| Direction | Operation | Runs in | Key | Flag | Read from |
+|-----------|-----------|---------|-----|------|-----------|
+| Request | Encrypt | Hosted pipeline | openshift-ci public | `--gpg-encryption-public-key` | Secret `preflight-decryption-key`, key `public` |
+| Request | Sign | Hosted pipeline | Hosted pipeline private | `--gpg-encryption-private-key` | Secret `preflight-decryption-key`, key `private` |
+| Request | Decrypt | openshift-ci | openshift-ci private | `--gpg-decryption-private-key` | Secret Manager field `operator-pipelines-gpg/private` |
+| Request | Verify | openshift-ci | Hosted pipeline public | `--gpg-decryption-public-key` | Secret Manager field `operator-pipelines-gpg/public` |
+| Response | Encrypt | openshift-ci | Hosted pipeline public | `--gpg-encryption-public-key` | Secret Manager field `operator-pipelines-gpg/public` |
+| Response | Sign | openshift-ci | openshift-ci private | `--gpg-encryption-private-key` | Secret Manager field `operator-pipelines-gpg/private` |
+| Response | Decrypt | Hosted pipeline | Hosted pipeline private | `--gpg-decryption-private-key` | Secret `preflight-decryption-key`, key `private` |
+| Response | Verify | Hosted pipeline | openshift-ci public | `--gpg-decryption-public-key` | Secret `preflight-decryption-key`, key `public` |
+
+Each system passes the same two files to both `encrypt` and `decrypt`: its own private key and the other system's public key.
+
+### Sequence Diagram
+
+![Sequence diagram of the request and response between the hosted pipeline and openshift-ci](img/ci-pipeline-communication.svg)
+
+Mermaid source of the same diagram:
+
+```text
+sequenceDiagram
+    autonumber
+    participant P as Hosted pipeline cluster<br/>Tekton task preflight-trigger
+    participant K as Prow control plane<br/>ProwJob API
+    participant J as openshift-ci job<br/>steps decrypt, check, encrypt
+    participant G as Artifact bucket<br/>public, read over HTTPS
+
+    Note over P: Holds pipeline private key and openshift-ci public key
+    Note over J: Holds openshift-ci private key and pipeline public key
+
+    rect rgb(241, 246, 252)
+        Note over P,J: Request (registry credentials)
+        P->>P: Encrypt dockerconfig to openshift-ci public key, sign with pipeline private key, base64 encode
+        P->>K: Create ProwJob, PFLT_DOCKERCONFIG as parameter
+        K->>J: Start job
+        J->>J: decrypt step: base64 decode, decrypt with openshift-ci private key, verify with pipeline public key
+    end
+
+    rect rgb(240, 248, 243)
+        Note over P,G: Response (preflight results)
+        J->>J: check step: run preflight, write preflight.tar.gz
+        J->>J: encrypt step: encrypt to pipeline public key, sign with openshift-ci private key
+        J->>G: Upload preflight.tar.gz.asc
+        K-->>P: ProwJob state and artifacts URL (watch)
+        P->>G: HTTP GET preflight.tar.gz.asc, no authentication
+        G-->>P: preflight.tar.gz.asc
+        P->>P: Decrypt with pipeline private key, verify with openshift-ci public key, untar
+    end
+```
 
 ## Flags and Environment
 
-| Flag | Env var | Used by | Description |
-|------|---------|---------|-------------|
-| `--gpg-encryption-public-key` | `GPG_ENCRYPTION_PUBLIC_KEY` | `encrypt` | Path to armored public key file |
-| `--gpg-encryption-private-key` | `GPG_ENCRYPTION_PRIVATE_KEY` | `encrypt` | Path to armored private key file |
-| `--gpg-decryption-public-key` | `GPG_DECRYPTION_PUBLIC_KEY` | `decrypt` | Path to armored public key file |
-| `--gpg-decryption-private-key` | `GPG_DECRYPTION_PRIVATE_KEY` | `decrypt` | Path to armored private key file |
+| Flag | Env var | Used by | Key to supply |
+|------|---------|---------|---------------|
+| `--gpg-encryption-public-key` | `GPG_ENCRYPTION_PUBLIC_KEY` | `encrypt` | Path to the receiver's armored public key |
+| `--gpg-encryption-private-key` | `GPG_ENCRYPTION_PRIVATE_KEY` | `encrypt` | Path to the sender's armored private key |
+| `--gpg-decryption-public-key` | `GPG_DECRYPTION_PUBLIC_KEY` | `decrypt` | Path to the sender's armored public key |
+| `--gpg-decryption-private-key` | `GPG_DECRYPTION_PRIVATE_KEY` | `decrypt` | Path to the receiver's armored private key |
 
-`GPG_PASSPHRASE` is read from the environment in `encryptPreRun` and `decryptPreRun`. If keys are passphrase-protected, set this variable on both sides. Current implementation reads it but does not explicitly unlock passphrase-protected keys via `crypto` API; use unprotected keys or extend `cmd/encrypt.go` and `cmd/decrypt.go` to call `Key.Unlock`.
+The message input differs between the two commands:
+
+* `encrypt` reads the plaintext from `--pflt-docker-config` (a file path), then `--file`, then stdin.
+* `decrypt` reads the armored message from `--pflt-docker-config` (the message text itself), then `--file`, then stdin.
+
+`GPG_PASSPHRASE` is read from the environment in `encryptPreRun` and `decryptPreRun` and is not used afterwards. A passphrase-protected private key fails with `Error creating new private key ring: gopenpgp: unable to add locked key to a keyring`. Use unprotected private keys, or extend `cmd/encrypt.go` and `cmd/decrypt.go` to call `Key.Unlock`.
 
 ## Key Storage
 
