@@ -186,161 +186,196 @@ The message input differs between the two commands:
 
 ## Key Storage
 
-### Secret Manager / Google Secret Manager (encryption side)
+### openshift-ci Side: Secret Manager
 
-The underlying storage is Google Secret Manager, but CI teams interact with it through the Secret Manager CLI. This enforces collection/group/field hierarchy and Rover group access control.
+The openshift-ci keys are stored in Google Secret Manager and managed with the OpenShift CI Secret Manager CLI (`hack/secret-manager.sh` in `openshift/release`, aliased `sm` in this document). See [Using the Secret Manager CLI](https://docs.ci.openshift.org/architecture/cli-secret-manager/). Members of a Rover group with access to the collection can create, update, and delete fields. Only CI infrastructure can read the values.
 
-* Secret holds the armored private key (and, where the implementation requires it, the public key). Update the secret version; do not delete old versions until rotation is verified.
-* Consumers reference secrets in CI config via a `credentials` stanza. Every secret referenced this way is mounted as a file before the job step runs. Example:
-  ```yaml
-  credentials:
-    - collection: my-collection
-      group: preflight-gpg
-      mount_path: /tmp/preflight-gpg
-  # Mounts /tmp/preflight-gpg/private.asc, /tmp/preflight-gpg/public.asc etc.
-  ```
-  To mount a single field: add `field: private.asc` to the entry.
-* At step runtime, invoke `preflight-trigger encrypt --gpg-encryption-private-key /tmp/preflight-gpg/private.asc --gpg-encryption-public-key /tmp/preflight-gpg/public.asc`.
-* Restrict IAM to the service account that performs encryption.
+| Collection | Field | Content | Mounted in the step as |
+|------------|-------|---------|------------------------|
+| `operator-pipelines` | `operator-pipelines-gpg/private` | openshift-ci private key (`Preflight Trigger`) | `/var/run/operator-pipelines-gpg/private` |
+| `operator-pipelines` | `operator-pipelines-gpg/public` | Hosted pipeline public key (`Operator Pipelines`) | `/var/run/operator-pipelines-gpg/public` |
 
-#### Prerequisites
+The `decrypt` and `encrypt` step definitions mount the group with this stanza:
+
+```yaml
+credentials:
+  - collection: operator-pipelines
+    group: operator-pipelines-gpg
+    mount_path: /var/run/operator-pipelines-gpg
+```
+
+The `preflight-prod` and `preflight-preprod` steps mount the same group. A change to either field applies to both environments.
+
+#### Secret Manager CLI Setup
 
 * `gcloud` CLI and `podman` (or `docker` with `CONTAINER_ENGINE=docker`) installed.
-* Clone `openshift/release` and use `hack/secret-manager.sh`:
+* A clone of `openshift/release`:
+
   ```bash
   git clone https://github.com/openshift/release.git
   alias sm="./release/hack/secret-manager.sh"
   sm login   # Authenticates via Red Hat SSO (browser flow, caches locally)
-  sm clean   # To clear cached credentials
+  sm clean   # Clears cached credentials
   ```
-* Rover group must have access to the collection. Collections are granted in `core-services/sync-rover-groups/_config.yaml` under `groups.<rover-group>.secret_collections`. After merging the PR, the postsubmit `branch-ci-openshift-release-main-gsm-secrets-reconciler` syncs access (under a minute).
+
+* A Rover group with access to the collection. Access is granted in `core-services/sync-rover-groups/_config.yaml` under `groups.<rover-group>.secret_collections`. After the pull request merges, the postsubmit `branch-ci-openshift-release-main-gsm-secrets-reconciler` syncs access.
 * Verify access:
+
   ```bash
-  sm list -c my-collection                          # fields in collection
-  sm list --rover-group my-rover-group              # collections for your group
-  sm describe -c my-collection preflight-gpg/private.asc  # metadata only, never value
+  sm list -c operator-pipelines                                   # fields in the collection
+  sm list --rover-group <rover-group>                             # collections for the group
+  sm describe -c operator-pipelines operator-pipelines-gpg/private  # metadata only
   ```
 
-Update these values for your deployment (collection/group/field naming):
-
-```
-COLLECTION=my-collection
-GROUP=preflight-gpg
-FIELD_PRIVATE=private.asc
-FIELD_PUBLIC=public.asc
-```
-
-Examples via Secret Manager CLI (backed by GSM):
+#### Commands
 
 ```bash
-# Create (first time)
-sm create -c ${COLLECTION} ${GROUP}/${FIELD_PRIVATE} --from-file ./private.asc
-sm create -c ${COLLECTION} ${GROUP}/${FIELD_PUBLIC}  --from-file ./public.asc
-# Prompts for: Jira project, Rotation information, Request information (enter none if not applicable)
+# Update an existing field (rotation)
+sm update -c operator-pipelines operator-pipelines-gpg/private --from-file ./ci-private.asc
+sm update -c operator-pipelines operator-pipelines-gpg/public  --from-file ./pipeline-public.asc
 
-# Update (rotation)
-sm update -c ${COLLECTION} ${GROUP}/${FIELD_PRIVATE} --from-file ./private.asc
-sm update -c ${COLLECTION} ${GROUP}/${FIELD_PUBLIC}  --from-file ./public.asc
-
-# Literal variant
-sm create -c ${COLLECTION} ${GROUP}/${FIELD_PUBLIC} --from-literal "$(cat ./public.asc)"
+# Create a field that does not exist yet
+# Prompts for: Jira project, rotation information, request information
+sm create -c operator-pipelines operator-pipelines-gpg/private --from-file ./ci-private.asc
+sm create -c operator-pipelines operator-pipelines-gpg/public  --from-file ./pipeline-public.asc
 ```
 
 Notes:
-* `describe` never shows the value; previous versions are retained in storage but `sm` always serves the latest.
-* For non-CI callers that use `gcloud` directly, the equivalent is `gcloud secrets versions add ${SECRET_ID} --project=${PROJECT_ID} --data-file=./private.asc`.
 
-### OpenShift Cluster (decryption side)
+* An update is used by CI job instances that start after it.
+* The backing storage retains previous versions. `sm` serves the latest version and has no command to return to a previous one.
+* `sm` never returns a value. Keep a copy of the current openshift-ci private key outside Secret Manager if rollback must be possible.
+* Direct access to the backing Google Secret Manager project (`gcloud secrets versions add|access|disable`) requires IAM permissions that Rover group membership does not grant.
 
-* The public key is stored as a Secret or ConfigMap in the cluster namespace that runs ProwJobs (check `config.ProwJobNamespace` and `PFLT_NAMESPACE`), or mounted via the same Secret Manager `credentials` stanza if the decrypt step runs in CI.
-* The Prow job mounts the key or injects it via environment and passes `--gpg-decryption-public-key` / `--gpg-decryption-private-key` to the decrypt step. When using Secret Manager, mount the collection/group:
-  ```yaml
-  credentials:
-    - collection: my-collection
-      group: preflight-gpg
-      mount_path: /tmp/preflight-gpg
-  ```
-  Then: `preflight-trigger decrypt --gpg-decryption-private-key /tmp/preflight-gpg/private.asc --gpg-decryption-public-key /tmp/preflight-gpg/public.asc`.
+### Hosted Pipeline Side: OpenShift Secret
 
-Update these values for your deployment:
+The hosted pipeline keys are stored in the Secret `preflight-decryption-key` in the namespace of the operator-pipelines deployment.
 
-```
-NAMESPACE=preflight
-SECRET_NAME=preflight-gpg-public-key
-KEY_FILE=public.asc
-```
+| Secret key | Content | Mounted in the task as |
+|------------|---------|------------------------|
+| `private` | Hosted pipeline private key (`Operator Pipelines`) | `/etc/gpg-key/private` |
+| `public` | openshift-ci public key (`Preflight Trigger`) | `/etc/gpg-key/public` |
 
-Example update when stored as an OpenShift Secret directly:
+An administrator generates the key material. The Secret object is created from files in the `operator-pipelines` repository by the Ansible task `Create preflight decryption key secret` in [`ansible/roles/operator-pipeline/tasks/pipeline-secrets.yml`](https://github.com/redhat-openshift-ecosystem/operator-pipelines/blob/main/ansible/roles/operator-pipeline/tasks/pipeline-secrets.yml), which runs with `force: true`.
+
+| Inventory | Private key file (Ansible Vault encrypted) | Public key file (plain armored text) |
+|-----------|--------------------------------------------|--------------------------------------|
+| Default (`group_vars/operator-pipeline.yml`) | `ansible/vaults/common/preflight-decryption-key-priv.gpg` | `ansible/vaults/common/preflight-decryption-key-pub` |
+| Production (`group_vars/operator-pipeline-prod.yml`) | `ansible/vaults/prod/preflight-decryption-key-priv.gpg` | `ansible/vaults/prod/preflight-decryption-key-pub` |
+
+Constraints:
+
+* A change applied to the Secret with `oc` is replaced by the repository files on the next deployment. Change the repository files to make a change permanent.
+* Both openshift-ci environments read one Secret Manager group, so the `common` and `prod` files must hold keys that match that group.
+* Each Tekton step pod reads the Secret when it starts. A changed Secret is used by steps that start after the change. No restart is required.
+* The same task mounts Secret `prow-kubeconfig`, key `kubeconfig`, to reach the Prow Kubernetes API.
+
+Inspect the keys currently in the Secret (`gpg --show-keys` prints key metadata and no key material):
 
 ```bash
-oc create secret generic ${SECRET_NAME} \
-  --from-file=public.asc=./public.asc \
-  --from-file=private.asc=./private.asc \
-  -n ${NAMESPACE} --dry-run=client -o yaml | oc apply -f -
+NAMESPACE=<operator-pipelines namespace>
 
-oc rollout restart deployment/<decrypting-component> -n ${NAMESPACE}  # if keys are mounted as env/volumes
+oc get secret preflight-decryption-key -n "${NAMESPACE}" -o jsonpath='{.data.public}' \
+  | base64 -d | gpg --show-keys --with-fingerprint    # expect uid "Preflight Trigger"
+
+oc get secret preflight-decryption-key -n "${NAMESPACE}" -o jsonpath='{.data.private}' \
+  | base64 -d | gpg --show-keys --with-fingerprint    # expect uid "Operator Pipelines"
 ```
-
-> Replace `SECRET_NAME`, `NAMESPACE`, and deployment names with the values used in your `openshift/release` `02_config` / periodic definitions.
 
 ## Generating a New Key Pair
 
-`preflight-trigger` uses `github.com/ProtonMail/gopenpgp/v2`. Any OpenPGP-compliant generator that produces ASCII-armored keys works. `gpg` (GnuPG) is recommended.
+`preflight-trigger` uses `github.com/ProtonMail/gopenpgp/v2`. Any OpenPGP generator that produces ASCII-armored, unprotected keys works.
+
+Requirements:
+
+* The openshift-ci pair has the real name `Preflight Trigger`. The hosted pipeline pair has the real name `Operator Pipelines`.
+* The private key has no passphrase (see [Flags and Environment](#flags-and-environment)).
+* Generate only the pair being rotated.
+
+This document uses these file names:
+
+| File | Content |
+|------|---------|
+| `ci-private.asc` | openshift-ci private key |
+| `ci-public.asc` | openshift-ci public key |
+| `pipeline-private.asc` | Hosted pipeline private key |
+| `pipeline-public.asc` | Hosted pipeline public key |
 
 ### Option A: GnuPG
 
 ```bash
-# 1. Generate key (RSA 4096, no expiry or set expiry per policy)
-gpg --batch --generate-key <<'KEYCFG'
+# 1. Use a temporary keyring so the export contains only the new key
+export GNUPGHOME="$(mktemp -d)"
+
+# 2. Generate the pair. Set NAME to "Preflight Trigger" or "Operator Pipelines".
+NAME="Preflight Trigger"
+gpg --batch --generate-key <<KEYCFG
 Key-Type: RSA
 Key-Length: 4096
 Subkey-Type: RSA
 Subkey-Length: 4096
-Name-Real: preflight-trigger
-Name-Email: preflight@redhat.com
+Name-Real: ${NAME}
 Expire-Date: 0
 %no-protection
 %commit
 KEYCFG
 
-# For passphrase-protected key, omit %no-protection and set Passphrase.
+# 3. Export armored keys. Use the pipeline-* file names for "Operator Pipelines".
+gpg --armor --export-secret-keys "${NAME}" > ci-private.asc
+gpg --armor --export             "${NAME}" > ci-public.asc
 
-# 2. Export armored keys
-gpg --armor --export preflight@redhat.com > public.asc
-gpg --armor --export-secret-keys preflight@redhat.com > private.asc
+# 4. Verify the real name and fingerprint of each file
+gpg --show-keys --with-fingerprint ci-private.asc ci-public.asc
 
-# 3. Verify
-gpg --list-keys preflight@redhat.com
-gpg --list-secret-keys preflight@redhat.com
+# 5. Remove the temporary keyring
+gpgconf --kill gpg-agent
+rm -rf "${GNUPGHOME}"
+unset GNUPGHOME
 ```
 
-For a passphrase-protected key:
+Set `Expire-Date` according to the key expiry policy in force. `0` means no expiry.
 
-```bash
-gpg --armor --export-secret-keys preflight@redhat.com > private.asc
-# Save passphrase in GSM alongside the key or in a separate secret.
-```
-
-### Option B: ProtonMail/gopenpgp (programmatic)
+### Option B: ProtonMail/gopenpgp
 
 ```go
 package main
 
 import (
-    "fmt"
-    "github.com/ProtonMail/gopenpgp/v2/crypto"
+	"log"
+	"os"
+
+	"github.com/ProtonMail/gopenpgp/v2/crypto"
 )
 
+// writePair generates an unprotected RSA 4096 key pair and writes
+// <prefix>-private.asc and <prefix>-public.asc to the current directory.
+func writePair(realName, prefix string) {
+	key, err := crypto.GenerateKey(realName, "", "rsa", 4096)
+	if err != nil {
+		log.Fatalf("generate %q: %v", realName, err)
+	}
+	private, err := key.Armor()
+	if err != nil {
+		log.Fatalf("armor private key %q: %v", realName, err)
+	}
+	public, err := key.GetArmoredPublicKey()
+	if err != nil {
+		log.Fatalf("armor public key %q: %v", realName, err)
+	}
+	if err := os.WriteFile(prefix+"-private.asc", []byte(private), 0o600); err != nil {
+		log.Fatal(err)
+	}
+	if err := os.WriteFile(prefix+"-public.asc", []byte(public), 0o644); err != nil {
+		log.Fatal(err)
+	}
+}
+
 func main() {
-    key, _ := crypto.GenerateKey("preflight-trigger", "preflight@redhat.com", "rsa", 4096)
-    pub, _ := key.GetArmoredPublicKey()
-    priv, _ := key.Armor()
-    fmt.Println(pub)
-    fmt.Println(priv)
+	// Keep only the call for the pair being rotated.
+	writePair("Preflight Trigger", "ci")
+	writePair("Operator Pipelines", "pipeline")
 }
 ```
-
-Save output to `public.asc` and `private.asc`.
 
 ## Rotating Keys
 
