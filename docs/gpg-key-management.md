@@ -379,144 +379,209 @@ func main() {
 
 ## Rotating Keys
 
-Rotation replaces both the GSM private key and the cluster public key atomically. Old artifacts encrypted with the previous key remain decryptable only if the old key is retained.
+Rotating one key pair changes one value in each store:
+
+| Rotated pair | Secret Manager field to update | Hosted pipeline file and Secret key to update |
+|--------------|--------------------------------|-----------------------------------------------|
+| openshift-ci (`Preflight Trigger`) | `operator-pipelines-gpg/private` with `ci-private.asc` | `preflight-decryption-key-pub`, Secret key `public`, with `ci-public.asc` |
+| Hosted pipeline (`Operator Pipelines`) | `operator-pipelines-gpg/public` with `pipeline-public.asc` | `preflight-decryption-key-priv.gpg`, Secret key `private`, with `pipeline-private.asc` |
+
+### Constraints
+
+* The two stores are updated with separate tools. No transaction covers both.
+* From the first update until the second one is deployed, the two systems hold keys from different generations and every run fails in a `decrypt` call (see [Troubleshooting](#troubleshooting)).
+* A run that starts before the updates and finishes after them fails the same way.
+* Runs that fail for these reasons pass when they are re-run after both updates are deployed.
+* Rotation applies to the `prod` and `preprod` environments together, because both read one Secret Manager group.
+* The current implementation loads one key per flag. Accepting an old and a new key during a transition requires a code change in `cmd/decrypt.go` to build key rings with more than one key.
 
 ### Prerequisites
 
-* New `public.asc` and `private.asc` generated and verified.
-* Access to update Google Secret Manager and the target OpenShift cluster.
-* Maintenance window or dual-key support if zero-downtime is required.
+* Access to the `operator-pipelines` collection through `sm` (see [Secret Manager CLI Setup](#secret-manager-cli-setup)).
+* Write access to `redhat-openshift-ecosystem/operator-pipelines` and the Ansible Vault password for it.
+* `oc` access to the namespace of the operator-pipelines deployment.
+* A period with no certification pipeline runs in progress, or agreement that runs in progress are re-run.
+* When rotating the openshift-ci pair: a copy of the current openshift-ci private key outside Secret Manager, if rollback must be possible.
 
 ### Steps
 
-1. Generate new key pair and verify armoring:
+1. Generate the new pair (see [Generating a New Key Pair](#generating-a-new-key-pair)).
+
+2. Collect the four key files in one directory. Use the new files for the rotated pair. For the other pair, use the deployed keys when both files are available, or a throwaway pair generated for this test. The openshift-ci private key cannot be read back from Secret Manager.
+
+3. Test both directions locally:
 
    ```bash
-   gpg --armor --export preflight@redhat.com > public.asc
-   gpg --armor --export-secret-keys preflight@redhat.com > private.asc
-   head -n 5 public.asc   # -----BEGIN PGP PUBLIC KEY BLOCK-----
-   head -n 5 private.asc  # -----BEGIN PGP PRIVATE KEY BLOCK-----
+   # Request direction: hosted pipeline to openshift-ci
+   preflight-trigger encrypt --file ./config.json \
+     --gpg-encryption-public-key ./ci-public.asc \
+     --gpg-encryption-private-key ./pipeline-private.asc \
+     --output-path ./config.json.gpg
+   preflight-trigger encode --file ./config.json.gpg --output-path ./config.json.gpg.b64
+   preflight-trigger decode --value "$(cat ./config.json.gpg.b64)" | preflight-trigger decrypt \
+     --gpg-decryption-private-key ./ci-private.asc \
+     --gpg-decryption-public-key ./pipeline-public.asc \
+     --output-path ./decrypted_config.json
+   cmp ./config.json ./decrypted_config.json      # no output, exit status 0
+
+   # Response direction: openshift-ci to hosted pipeline
+   preflight-trigger encrypt --file ./results.tar.gz \
+     --gpg-encryption-public-key ./pipeline-public.asc \
+     --gpg-encryption-private-key ./ci-private.asc \
+     --output-path ./preflight.tar.gz.asc
+   preflight-trigger decrypt --file ./preflight.tar.gz.asc \
+     --gpg-decryption-private-key ./pipeline-private.asc \
+     --gpg-decryption-public-key ./ci-public.asc \
+     --output-path ./preflight.tar.gz
+   cmp ./results.tar.gz ./preflight.tar.gz        # no output, exit status 0
    ```
 
-2. Test encrypt/decrypt locally before publishing:
+   `config.json` is any `dockerconfigjson` file and `results.tar.gz` is any gzip-compressed tar archive.
+
+4. Update Secret Manager. Run the line for the rotated pair:
 
    ```bash
-   echo "test payload" | preflight-trigger encrypt \
-     --gpg-encryption-public-key ./public.asc \
-     --gpg-encryption-private-key ./private.asc > /tmp/test.asc
+   # openshift-ci pair rotated
+   sm update -c operator-pipelines operator-pipelines-gpg/private --from-file ./ci-private.asc
 
-   cat /tmp/test.asc | preflight-trigger decrypt \
-     --gpg-decryption-public-key ./public.asc \
-     --gpg-decryption-private-key ./private.asc
-
-   # Should output: test payload
+   # Hosted pipeline pair rotated
+   sm update -c operator-pipelines operator-pipelines-gpg/public --from-file ./pipeline-public.asc
    ```
 
-   For dockerconfig:
+5. Update the hosted pipeline files in a checkout of `redhat-openshift-ecosystem/operator-pipelines`. Run the block for the rotated pair:
 
    ```bash
-   preflight-trigger encrypt --pflt-docker-config ./config.json \
-     --gpg-encryption-public-key ./public.asc \
-     --gpg-encryption-private-key ./private.asc --output-path /tmp/config.asc
-   preflight-trigger decrypt --file /tmp/config.asc \
-     --gpg-decryption-public-key ./public.asc \
-     --gpg-decryption-private-key ./private.asc
+   # openshift-ci pair rotated: the public key file is stored as plain armored text
+   cp ./ci-public.asc ansible/vaults/common/preflight-decryption-key-pub
+   cp ./ci-public.asc ansible/vaults/prod/preflight-decryption-key-pub
+
+   # Hosted pipeline pair rotated: the private key file is Ansible Vault encrypted
+   ansible-vault encrypt --vault-password-file "${VAULT_PASSWORD_PATH}" \
+     --output ansible/vaults/common/preflight-decryption-key-priv.gpg ./pipeline-private.asc
+   ansible-vault encrypt --vault-password-file "${VAULT_PASSWORD_PATH}" \
+     --output ansible/vaults/prod/preflight-decryption-key-priv.gpg ./pipeline-private.asc
    ```
 
-3. Publish private key to Secret Manager (backed by Google Secret Manager):
+   Merge the change and deploy it with the operator-pipelines deployment procedure. The [operator-pipelines developer guide](https://github.com/redhat-openshift-ecosystem/operator-pipelines/blob/main/docs/developer-guide.md) documents this manual command:
 
    ```bash
-   # Ensure you are logged in: sm login
-   sm update -c ${COLLECTION} ${GROUP}/${FIELD_PRIVATE} --from-file ./private.asc
-   sm update -c ${COLLECTION} ${GROUP}/${FIELD_PUBLIC}  --from-file ./public.asc
-   # Provide Jira project / rotation info / request info when prompted if creating for the first time.
-   # If you operate outside CI infra, raw GSM equivalent:
-   # gcloud secrets versions add ${SECRET_ID} --project=${PROJECT_ID} --data-file=./private.asc
+   ansible-playbook -v \
+     -i "ansible/inventory/operator-pipeline-${ENV}" \
+     -e "oc_namespace=${NAMESPACE}" \
+     -e "ocp_token=$(oc whoami -t)" \
+     --vault-password-file "${VAULT_PASSWORD_PATH}" \
+     ansible/playbooks/deploy.yml
    ```
 
-4. Publish public key to OpenShift:
+   To shorten the period in which the two stores disagree, the Secret can be updated directly before the deployment runs. The next deployment replaces this Secret with the repository files, so the repository change above is still required:
 
    ```bash
-   oc create secret generic ${SECRET_NAME} \
-     --from-file=public.asc=./public.asc \
-     --from-file=private.asc=./private.asc \
-     -n ${NAMESPACE} --dry-run=client -o yaml | oc apply -f -
+   # Both files are required: the first is the hosted pipeline private key,
+   # the second is the openshift-ci public key.
+   oc create secret generic preflight-decryption-key \
+     --from-file=private=./pipeline-private.asc \
+     --from-file=public=./ci-public.asc \
+     -n "${NAMESPACE}" --dry-run=client -o yaml | oc apply -f -
    ```
 
-   If the decrypt job requires both keys (current code reads both `GPGDecryptionPublicKey` and `GPGDecryptionPrivateKey`), publish both files.
-   If the decrypt step runs in CI, mount the same Secret Manager collection/group via the `credentials` stanza instead of a raw OpenShift Secret.
-
-5. Verify in-cluster:
+6. Verify both stores:
 
    ```bash
-   sm list -c ${COLLECTION}                          # confirm fields updated
-   sm describe -c ${COLLECTION} ${GROUP}/${FIELD_PUBLIC}  # metadata / creation date
-   oc get secret ${SECRET_NAME} -n ${NAMESPACE} -o jsonpath='{.data.public\.asc}' | base64 -d | head
-   oc debug job/<recent-preflight-job> -- cat /path/to/mounted/public.asc  # adjust path
+   sm list -c operator-pipelines
+   sm describe -c operator-pipelines operator-pipelines-gpg/private   # metadata only
+   sm describe -c operator-pipelines operator-pipelines-gpg/public    # metadata only
+
+   # Fingerprints in the Secret must equal the fingerprints of the local files
+   gpg --show-keys --with-fingerprint ./ci-public.asc ./pipeline-private.asc
+   oc get secret preflight-decryption-key -n "${NAMESPACE}" -o jsonpath='{.data.public}' \
+     | base64 -d | gpg --show-keys --with-fingerprint
+   oc get secret preflight-decryption-key -n "${NAMESPACE}" -o jsonpath='{.data.private}' \
+     | base64 -d | gpg --show-keys --with-fingerprint
    ```
 
-6. Run a canary ProwJob with `--dry-run` or a real submission:
+   Secret Manager values cannot be read back. The run in step 7 is the test of the Secret Manager contents.
+
+7. Run one job end to end. Either start a hosted pipeline run against a test bundle, or run the task's commands by hand with a kubeconfig for the Prow cluster:
 
    ```bash
-   preflight-trigger create job --ocp-version 4.18 --pflt-index-image <image> \
-     --test-asset <asset> --dry-run | grep -i gpg
+   export KUBECONFIG=<prow kubeconfig>
+   export PFLT_DOCKERCONFIG="$(cat ./config.json.gpg.b64)"   # from step 3; tests the request direction
+
+   preflight-trigger create job \
+     --environment preprod \
+     --ocp-version <version> \
+     --asset-type operator \
+     --pflt-index-image <index-image> \
+     --test-asset <bundle-image>
+
+   preflight-trigger artifacts --environment preprod --ocp-version <version>
+
+   preflight-trigger decrypt \
+     --gpg-decryption-private-key ./pipeline-private.asc \
+     --gpg-decryption-public-key ./ci-public.asc \
+     --file preflight.tar.gz.asc \
+     --output-path preflight.tar.gz
+
+   preflight-trigger artifacts --untar
    ```
 
-   Submit a test job and confirm decrypt succeeds and artifacts are produced.
+   Expected results:
 
-7. Retire old key version after verification:
+   * The log of the `decrypt` step in the ProwJob contains no `Error decrypting message` line. The step exits 0 even when decryption fails, so read the log.
+   * `preflight-trigger decrypt` exits 0 and `preflight-trigger artifacts --untar` creates the `artifacts` directory and `preflight.log`.
 
-   Previous versions are retained automatically in storage, but the CLI always serves the latest. There is no `sm` rollback-to-version; if needed, re-apply the old file with `sm update`. For raw GSM:
-   ```bash
-   gcloud secrets versions disable <old-version> --secret=${SECRET_ID} --project=${PROJECT_ID}
-   ```
-   Keep the old key for the retention window needed to decrypt in-flight artifacts, then destroy.
-
-### Dual-Key / Zero-Downtime Rotation
-
-Current `encrypt`/`decrypt` implementations support a single key pair. For zero downtime:
-
-* Deploy the decrypt side to accept both old and new keys (requires code change to try multiple `KeyRing`s).
-* Alternatively, coordinate a short window: publish new keys to both GSM and cluster simultaneously, and re-encrypt any artifacts created during the window if decryption fails.
+8. Remove the old key. Delete local copies of the replaced private key when no rollback is planned. Secret Manager retains previous versions in its backing storage, and the previous hosted pipeline files remain in the Git history of `operator-pipelines`.
 
 ### Rollback
 
-If decryption fails after rotation:
+Rollback is the same procedure with the previous files.
 
 ```bash
-sm update -c ${COLLECTION} ${GROUP}/${FIELD_PRIVATE} --from-file ./private.asc.prev
-sm update -c ${COLLECTION} ${GROUP}/${FIELD_PUBLIC}  --from-file ./public.asc.prev
-# Raw GSM fallback:
-# gcloud secrets versions access <previous-version> --secret=${SECRET_ID} --project=${PROJECT_ID} > ./private.asc.prev
-oc create secret generic ${SECRET_NAME} --from-file=public.asc=./public.asc.prev -n ${NAMESPACE} --dry-run=client -o yaml | oc apply -f -
+# openshift-ci pair: restore the previous private key in Secret Manager
+sm update -c operator-pipelines operator-pipelines-gpg/private --from-file ./ci-private.prev.asc
+
+# Hosted pipeline pair: restore the previous public key in Secret Manager
+sm update -c operator-pipelines operator-pipelines-gpg/public --from-file ./pipeline-public.prev.asc
 ```
 
-Re-publish the previous `public.asc` and `private.asc` to both stores.
+On the hosted pipeline side, revert the commit that changed the files under `ansible/vaults/` in `operator-pipelines` and deploy again. Both stores must return to the same generation of the rotated pair.
+
+When no copy of the previous openshift-ci private key exists outside Secret Manager, rollback of that pair is not possible through `sm`. Rotate forward to another new pair.
 
 ## Verification Checklist
 
-* [ ] `public.asc` and `private.asc` are ASCII-armored and match (`gpg --list-packets` shows same key ID).
-* [ ] Local `encrypt` then `decrypt` round-trip succeeds for both stdin and file modes.
-* [ ] Secret Manager fields updated (`sm list -c ${COLLECTION}` shows new creation date via `sm describe`).
-* [ ] GSM backing secret new version is `ENABLED` and accessible to the encryption service account (if applicable).
-* [ ] OpenShift Secret in `preflight` namespace contains updated keys.
-* [ ] Canary ProwJob decrypts successfully.
-* [ ] Old key version retained until no in-flight artifacts remain.
+* [ ] Each key file has the expected real name (`gpg --show-keys <file>`): `Preflight Trigger` for `ci-*.asc`, `Operator Pipelines` for `pipeline-*.asc`.
+* [ ] The private and public file of the rotated pair show the same fingerprint.
+* [ ] The local test passes in the request direction and in the response direction.
+* [ ] The Secret Manager field for the rotated pair is updated (`private` for the openshift-ci pair, `public` for the hosted pipeline pair).
+* [ ] The files under `ansible/vaults/common` and `ansible/vaults/prod` in `operator-pipelines` are updated, merged, and deployed.
+* [ ] The fingerprints in Secret `preflight-decryption-key` equal the fingerprints of the local files.
+* [ ] One job passes end to end: the `decrypt` step log has no error, and the hosted pipeline side decrypts and extracts `preflight.tar.gz.asc`.
+* [ ] Copies of the previous keys are kept until rollback is no longer planned.
 
 ## Troubleshooting
 
-* `GPG_ENCRYPTION_PUBLIC_KEY and GPG_ENCRYPTION_PRIVATE_KEY must be set`: flags or env vars not set; `encrypt` requires both encryption keys.
-* `Unable to read decryption private key`: file path wrong or Secret not mounted.
-* `Error creating new public key from armored`: file is not armored or contains extra whitespace; re-export with `gpg --armor`.
-* `Error decrypting message`: key mismatch, passphrase not set via `GPG_PASSPHRASE`, or message was encrypted with a different key pair. Verify same pair is used on both sides.
-* No GSM access: check `gcloud auth` and IAM `secretmanager.secretAccessor` on the secret, or `sm login` / Rover group membership (`sm list --rover-group my-rover-group`, `core-services/sync-rover-groups/_config.yaml`, postsubmit `branch-ci-openshift-release-main-gsm-secrets-reconciler`).
-* `You don't have permission to access secrets in collection ...`: Rover group does not have access; add to `sync-rover-groups/_config.yaml` and wait for reconciler.
-* `Secret is in inconsistent state`: run `sm delete -c $COLLECTION $GROUP/$FIELD` then `sm create` again.
-* `sm get-sa fails`: collection has no `updater_service_accounts` entry; request one if automating rotation.
+| Message or symptom | Cause | Action |
+|--------------------|-------|--------|
+| `GPG_ENCRYPTION_PUBLIC_KEY and GPG_ENCRYPTION_PRIVATE_KEY must be set` | `encrypt` ran without both key flags. | Pass `--gpg-encryption-public-key` and `--gpg-encryption-private-key`. |
+| `Unable to read decryption private key` or `Unable to read encryption private key` | The path does not exist, or the Secret or Secret Manager group is not mounted. | Check the path and the mount. |
+| `Error creating new public key from armored` | The file is not an ASCII-armored key. | Export again with `gpg --armor`. |
+| `Error creating new private key ring: gopenpgp: unable to add locked key to a keyring` | The private key has a passphrase. | Generate the pair with `%no-protection`. |
+| `Error decrypting message: Signature Verification Error: No matching signature` | The file passed as `--gpg-decryption-public-key` is not the sender's public key. After a rotation, the receiver still holds the sender's previous public key, or the sender still signs with its previous private key. | Compare fingerprints on both sides and complete the update in the store that is behind. |
+| `Error decrypting message: gopenpgp: error in reading message: openpgp: incorrect key` | The message was encrypted to a public key that does not belong to the private key passed as `--gpg-decryption-private-key`. | Compare fingerprints on both sides and complete the update in the store that is behind. |
+| The `decrypt` step log shows `Error decrypting message`, the step passes, and preflight cannot pull private images | The step script does not stop on a failed command. `check` then runs without `decrypted_config.json`. | Fix the key mismatch reported in the log. |
+| `Response returned status code other than 200: 404` from `artifacts` | The job did not upload `preflight.tar.gz.asc`. The `encrypt` step failed, or `--environment` or `--ocp-version` differ from the values passed to `create job`. | Read the `encrypt` step log and use the same flag values in both commands. |
+| `gpg: can't connect to the gpg-agent: File name too long` | The `GNUPGHOME` path is too long for the agent socket. | Use a shorter directory, for example `mktemp -d`. |
+| `You don't have permission to access secrets in collection ...` | The Rover group has no access to the collection. | Add the collection in `core-services/sync-rover-groups/_config.yaml` and wait for the postsubmit `branch-ci-openshift-release-main-gsm-secrets-reconciler`. |
+| `Secret ... is in inconsistent state` | The field exists in the index or in storage, and is missing in the other. | Run `sm delete -c operator-pipelines <group/field>`, then `sm create`. |
+| `sm get-sa` fails | The collection has no `updater_service_accounts` entry. | Request one if rotation is to be automated. |
 
 ## References
 
-* Implementation: `cmd/encrypt.go`, `cmd/decrypt.go`, `cmd/root.go`
+* Implementation: [`cmd/encrypt.go`](../cmd/encrypt.go), [`cmd/decrypt.go`](../cmd/decrypt.go), [`cmd/job.go`](../cmd/job.go), [`cmd/artifacts.go`](../cmd/artifacts.go), [`cmd/root.go`](../cmd/root.go)
+* openshift-ci steps: https://github.com/openshift/release/tree/main/ci-operator/step-registry/operator-pipelines
+* Hosted pipeline task: https://github.com/redhat-openshift-ecosystem/operator-pipelines/blob/main/ansible/roles/operator-pipeline/templates/openshift/tasks/preflight-trigger.yml
+* Hosted pipeline Secret definitions: https://github.com/redhat-openshift-ecosystem/operator-pipelines/blob/main/ansible/roles/operator-pipeline/tasks/pipeline-secrets.yml
 * Library: `github.com/ProtonMail/gopenpgp/v2`
 * GnuPG: https://gnupg.org/documentation/
 * OpenShift CI Secret Manager CLI: https://docs.ci.openshift.org/architecture/cli-secret-manager/
