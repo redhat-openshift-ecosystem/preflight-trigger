@@ -1,0 +1,134 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1110 770" width="1110" height="770" role="img" aria-labelledby="title desc" font-family="Helvetica, Arial, sans-serif">
+  <title id="title">Communication between the hosted pipeline and openshift-ci</title>
+  <desc id="desc">Sequence diagram. The hosted pipeline encrypts registry credentials to the openshift-ci public key, signs them with the pipeline private key, and creates a ProwJob that carries them as a parameter. The openshift-ci job decrypts them, runs preflight, encrypts the results to the pipeline public key, signs them with the openshift-ci private key, and uploads them to a public bucket. The hosted pipeline downloads and decrypts the results.</desc>
+
+  <defs>
+    <marker id="arrow-request" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1f5fa8"/>
+    </marker>
+    <marker id="arrow-response" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#1e7a46"/>
+    </marker>
+  </defs>
+
+  <!-- Opaque background keeps the diagram legible on dark pages -->
+  <rect x="0" y="0" width="1110" height="770" fill="#ffffff"/>
+
+  <!-- Direction bands -->
+  <rect x="8" y="132" width="1094" height="234" rx="6" fill="#f1f6fc"/>
+  <rect x="8" y="372" width="1094" height="346" rx="6" fill="#f0f8f3"/>
+
+  <!-- Lifelines -->
+  <g stroke="#8a8a8a" stroke-width="1.2" stroke-dasharray="5 4">
+    <line x1="150" y1="68" x2="150" y2="718"/>
+    <line x1="420" y1="68" x2="420" y2="718"/>
+    <line x1="700" y1="68" x2="700" y2="718"/>
+    <line x1="980" y1="68" x2="980" y2="718"/>
+  </g>
+
+  <!-- Participants -->
+  <g fill="#2b2b2b" stroke="#2b2b2b" stroke-width="1">
+    <rect x="35" y="16" width="230" height="52" rx="6"/>
+    <rect x="305" y="16" width="230" height="52" rx="6"/>
+    <rect x="585" y="16" width="230" height="52" rx="6"/>
+    <rect x="865" y="16" width="230" height="52" rx="6"/>
+  </g>
+  <g fill="#ffffff" text-anchor="middle">
+    <text x="150" y="38" font-size="14" font-weight="bold">Hosted pipeline cluster</text>
+    <text x="150" y="56" font-size="12">Tekton task preflight-trigger</text>
+    <text x="420" y="38" font-size="14" font-weight="bold">Prow control plane</text>
+    <text x="420" y="56" font-size="12">ProwJob API</text>
+    <text x="700" y="38" font-size="14" font-weight="bold">openshift-ci job</text>
+    <text x="700" y="56" font-size="12">steps decrypt, check, encrypt</text>
+    <text x="980" y="38" font-size="14" font-weight="bold">Artifact bucket</text>
+    <text x="980" y="56" font-size="12">public, read over HTTPS</text>
+  </g>
+
+  <!-- Keys held by each side -->
+  <g fill="#fff8e1" stroke="#b58900" stroke-width="1">
+    <rect x="25" y="80" width="250" height="42" rx="4"/>
+    <rect x="575" y="80" width="250" height="42" rx="4"/>
+  </g>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12">
+    <text x="150" y="97">Holds: pipeline private key,</text>
+    <text x="150" y="113">openshift-ci public key</text>
+    <text x="700" y="97">Holds: openshift-ci private key,</text>
+    <text x="700" y="113">pipeline public key</text>
+  </g>
+
+  <!-- Request direction -->
+  <text x="18" y="150" font-size="13" font-weight="bold" fill="#1f5fa8" stroke="#f1f6fc" stroke-width="4" paint-order="stroke">Request: hosted pipeline to openshift-ci (registry credentials)</text>
+
+  <rect x="25" y="158" width="250" height="58" rx="4" fill="#ffffff" stroke="#1f5fa8" stroke-width="1.4"/>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12">
+    <text x="150" y="176">1. Encrypt dockerconfig to openshift-ci</text>
+    <text x="150" y="191">public key, sign with pipeline private</text>
+    <text x="150" y="206">key, base64 encode</text>
+  </g>
+
+  <line x1="150" y1="254" x2="420" y2="254" stroke="#1f5fa8" stroke-width="1.6" marker-end="url(#arrow-request)"/>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12" stroke="#f1f6fc" stroke-width="4" paint-order="stroke">
+    <text x="285" y="234">2. Create ProwJob,</text>
+    <text x="285" y="248">PFLT_DOCKERCONFIG as parameter</text>
+  </g>
+
+  <line x1="420" y1="288" x2="700" y2="288" stroke="#1f5fa8" stroke-width="1.6" marker-end="url(#arrow-request)"/>
+  <text x="560" y="282" fill="#2b2b2b" text-anchor="middle" font-size="12" stroke="#f1f6fc" stroke-width="4" paint-order="stroke">3. Start job</text>
+
+  <rect x="575" y="300" width="250" height="58" rx="4" fill="#ffffff" stroke="#1f5fa8" stroke-width="1.4"/>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12">
+    <text x="700" y="318">4. decrypt step: base64 decode,</text>
+    <text x="700" y="333">decrypt with openshift-ci private key,</text>
+    <text x="700" y="348">verify with pipeline public key</text>
+  </g>
+
+  <!-- Response direction -->
+  <text x="18" y="390" font-size="13" font-weight="bold" fill="#1e7a46" stroke="#f0f8f3" stroke-width="4" paint-order="stroke">Response: openshift-ci to hosted pipeline (preflight results)</text>
+
+  <rect x="575" y="398" width="250" height="42" rx="4" fill="#ffffff" stroke="#1e7a46" stroke-width="1.4"/>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12">
+    <text x="700" y="415">5. check step: run preflight,</text>
+    <text x="700" y="430">write preflight.tar.gz</text>
+  </g>
+
+  <rect x="575" y="450" width="250" height="58" rx="4" fill="#ffffff" stroke="#1e7a46" stroke-width="1.4"/>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12">
+    <text x="700" y="468">6. encrypt step: encrypt to pipeline</text>
+    <text x="700" y="483">public key, sign with openshift-ci</text>
+    <text x="700" y="498">private key</text>
+  </g>
+
+  <line x1="700" y1="536" x2="980" y2="536" stroke="#1e7a46" stroke-width="1.6" marker-end="url(#arrow-response)"/>
+  <text x="840" y="530" fill="#2b2b2b" text-anchor="middle" font-size="12" stroke="#f0f8f3" stroke-width="4" paint-order="stroke">7. Upload preflight.tar.gz.asc</text>
+
+  <line x1="420" y1="574" x2="150" y2="574" stroke="#1e7a46" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#arrow-response)"/>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12" stroke="#f0f8f3" stroke-width="4" paint-order="stroke">
+    <text x="285" y="554">8. ProwJob state and</text>
+    <text x="285" y="568">artifacts URL (watch)</text>
+  </g>
+
+  <line x1="150" y1="610" x2="980" y2="610" stroke="#1e7a46" stroke-width="1.6" marker-end="url(#arrow-response)"/>
+  <text x="565" y="604" fill="#2b2b2b" text-anchor="middle" font-size="12" stroke="#f0f8f3" stroke-width="4" paint-order="stroke">9. HTTP GET preflight.tar.gz.asc, no authentication</text>
+
+  <line x1="980" y1="642" x2="150" y2="642" stroke="#1e7a46" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#arrow-response)"/>
+  <text x="565" y="636" fill="#2b2b2b" text-anchor="middle" font-size="12" stroke="#f0f8f3" stroke-width="4" paint-order="stroke">10. preflight.tar.gz.asc</text>
+
+  <rect x="25" y="654" width="250" height="58" rx="4" fill="#ffffff" stroke="#1e7a46" stroke-width="1.4"/>
+  <g fill="#2b2b2b" text-anchor="middle" font-size="12">
+    <text x="150" y="672">11. Decrypt with pipeline private key,</text>
+    <text x="150" y="687">verify with openshift-ci public key,</text>
+    <text x="150" y="702">untar</text>
+  </g>
+
+  <!-- Legend -->
+  <g font-size="12" fill="#2b2b2b">
+    <line x1="18" y1="744" x2="58" y2="744" stroke="#1f5fa8" stroke-width="1.6" marker-end="url(#arrow-request)"/>
+    <text x="66" y="748">request</text>
+    <line x1="140" y1="744" x2="180" y2="744" stroke="#1e7a46" stroke-width="1.6" marker-end="url(#arrow-response)"/>
+    <text x="188" y="748">response</text>
+    <line x1="270" y1="744" x2="310" y2="744" stroke="#1e7a46" stroke-width="1.6" stroke-dasharray="6 4" marker-end="url(#arrow-response)"/>
+    <text x="318" y="748">returned data</text>
+    <rect x="430" y="736" width="16" height="16" rx="3" fill="#fff8e1" stroke="#b58900"/>
+    <text x="452" y="748">keys held</text>
+  </g>
+</svg>
